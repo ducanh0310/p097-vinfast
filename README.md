@@ -1,194 +1,151 @@
-# AI20K Agent Template
+# Auto Car Configurator & Pricing AI Agent (VF020-01)
 
-Template chính thức cho học viên VinUni AI20K Build Phase: cấu trúc dự án, code
-mẫu và hướng dẫn kỹ thuật để xây dựng một AI Agent hoàn chỉnh — từ kiến trúc,
-code, test cho đến deploy và nộp bài Demo Day.
+> **Tóm tắt 1 câu:** Tự động hóa quá trình tư vấn cấu hình dòng xe Xe X, áp dụng chính xác quy tắc giá & chương trình khuyến mãi theo thời gian thực và tự động tính chi phí lăn bánh theo tỉnh/thành cho Khách hàng & Tư vấn viên.
 
-Technical Guidebook: <https://phoenix.note.transformerlabs.ai/technical-book>
+---
 
-## Template có sẵn những gì
+## Vấn đề (Problem)
 
-- **Cấu trúc thư mục tách lớp** — `agents/`, `api/`, `services/`, `models/` đã
-  chia sẵn, không phải bàn lại từ đầu.
-- **Code mẫu chạy được** — LangGraph agent (state, node, tool), FastAPI routes,
-  Pydantic settings, schema.
-- **Docker và CI** — Dockerfile multi-stage, `docker-compose.yml`, workflow
-  GitHub Actions chạy `ruff` + `pytest` khi push lên `main`/`develop` và khi mở
-  pull request vào `main`.
-- **Technical Guidebook 10 chương** trong `docs/guide/`, đồng thời đọc được
-  online.
-- **Checklist 10 deliverables** của Demo Day.
-- **AI usage logging** — hook cài sẵn cho 6 công cụ AI, log tự động gửi lên
-  grading server mỗi lần `git push`.
+**Thực trạng & Pain Point:**
+- **Ai đang gặp vấn đề?** Khách hàng mua xe ô tô và Đội ngũ tư vấn viên bán hàng (Sales Representative / Consultant).
+- **Vấn đề tốn bao nhiêu thời gian/tiền?** Khi chọn mua xe, khách hàng có nhu cầu tự cấu hình chi tiết (phiên bản, màu sắc, gói thuê/mua pin, phụ kiện) và nắm rõ chi phí lăn bánh chính xác. Tuy nhiên, bảng giá niêm yết, chính sách ưu đãi/khuyến mãi và lệ phí trước bạ thay đổi liên tục theo mẫu xe, thời điểm và đối tượng khách hàng. Tư vấn viên phải báo giá thủ công, mất nhiều thời gian tra cứu và dễ dẫn đến sai sót, báo giá không thống nhất.
+- **Tại sao các giải pháp hiện tại chưa đủ?** Các công cụ configurator truyền thống hoặc bảng tính tĩnh thiếu linh hoạt trong việc kết hợp nhiều điều kiện khuyến mãi phức tạp, không cung cấp giải thích tự nhiên bằng AI, không cảnh báo xung đột cấu hình và thiếu quy trình kiểm duyệt báo giá chính thức (Human-in-the-Loop - HITL) trước khi gửi khách hàng.
 
-## Yêu cầu
+---
 
-- Python 3.11 (phiên bản CI đang dùng)
-- Git
-- Docker — tuỳ chọn, chỉ cần nếu chạy `docker compose`
+## Giải pháp (Solution)
 
-## Bắt đầu
+Hệ thống **AI Agent Cấu hình xe & Báo giá khuyến mãi tự động** giải quyết toàn diện vấn đề trên:
 
-### 1. Clone repo của đội
+- **Cấu hình xe tương tác từng bước (Interactive Configurator):** Hướng dẫn người dùng chọn phiên bản, màu sơn, pin (mua đứt vs thuê pin) và phụ kiện; tự động kiểm tra & cảnh báo khi có lựa chọn cấu hình không hợp lý/xung đột.
+- **Tính giá & Khuyến mãi chuẩn xác (Deterministic Pricing & RAG Engine):** Tích hợp RAG trên Vector DB để cập nhật chính xác bảng giá & ưu đãi mới nhất. Sử dụng công cụ tính toán deterministic (không để LLM tự tính tiền) để đảm bảo độ chính xác 100% khi áp khuyến mãi và phí lăn bánh theo từng tỉnh/thành.
+- **Quy trình Báo giá & Duyệt HITL (Human-in-the-Loop):** Hỗ trợ 2 vai trò (Khách hàng & Tư vấn viên), cho phép xuất file báo giá PDF chuyên nghiệp. Mọi báo giá chính thức đều trải qua luồng tư vấn viên kiểm duyệt (HITL) để ghi log phiên bản giá và bảo mật thông tin khách hàng.
+- **Tính năng nâng cao:**
+  - Cảnh báo & khuyến nghị gói cấu hình tối ưu theo ngân sách khách hàng.
+  - Phân tích & so sánh bài toán tài chính: Mua pin vs Thuê pin theo thời gian sử dụng.
+  - Quản lý lịch sử báo giá khách hàng & Dashboard đánh giá hiệu quả chương trình khuyến mãi.
 
-Khi đội được chốt, hệ thống tự sinh repo cho đội từ template này, nằm trong org
-GitHub của khoá bạn đang học và đặt tên theo mã đội. Copy URL ở trang đội trên
-Phoenix rồi clone về:
+---
+
+## Target User
+
+- **Primary User:** Khách hàng cá nhân / doanh nghiệp có nhu cầu tìm hiểu, tùy chỉnh cấu hình xe và nhận bảng báo giá dự toán chi tiết.
+- **Secondary User:** Tư vấn viên bán hàng (Sales / Consultant) cần công cụ tự động hóa tính giá, kiểm tra báo giá chính xác (HITL) và xuất file PDF gửi khách hàng.
+
+---
+
+## Tech Stack
+
+| Layer | Technology | Chi tiết |
+|-------|-----------|----------|
+| **AI Agent Orchestration** | LangGraph + LangChain 0.3 | Điều phối luồng cấu hình, kiểm tra quy tắc giá & phản hồi hội thoại |
+| **LLM Service** | OpenAI GPT-4o / Gemini | Xử lý hội thoại tự nhiên, tư vấn & giải thích chi tiết |
+| **RAG & Vector DB** | ChromaDB / Vector Store | Tra cứu bảng giá, chính sách khuyến mãi & lệ phí trước bạ theo tỉnh |
+| **Calculation Engine** | Python Deterministic Tool Engine | Tính toán giá cuối, ưu đãi & phí lăn bánh tuyệt đối chính xác |
+| **Backend API** | FastAPI + Python 3.11+ | RESTful API server, async processing, Pydantic validation |
+| **Frontend UI** | React / Next.js + TypeScript | Giao diện Car Configurator 3D/Trực quan (Khách / Tư vấn viên) |
+| **Database** | PostgreSQL / SQLite | Lưu trữ dữ liệu cấu hình, lịch sử báo giá & phiên bản bảng giá |
+| **Export Service** | PDF Generator (ReportLab / WeasyPrint) | Xuất báo giá PDF chính thức |
+| **DevOps & CI/CD** | Docker + GitHub Actions (Render / Vercel) | Multi-stage build, tự động lint, test & deploy |
+
+---
+
+## Quick Start
 
 ```bash
-git clone https://github.com/<ORG-CỦA-KHOÁ>/<MÃ-ĐỘI>.git
-cd <MÃ-ĐỘI>
-```
+# 1. Clone repo của đội
+git clone https://github.com/AI20K-Build-Phase-Cohort-4/P-097.git
+cd P-097
 
-Không cần `rm -rf .git`, `git init` hay `git remote add`: repo sinh từ template
-đã bắt đầu bằng lịch sử riêng của đội và remote trỏ sẵn đúng chỗ. Chưa thấy repo
-của đội thì báo BTC — repo tự tạo nằm ngoài org sẽ không được chấm.
-
-### 2. Cài môi trường
-
-```bash
+# 2. Setup môi trường Python
 python3.11 -m venv .venv
-source .venv/bin/activate      # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-```
+# Trên Linux/macOS:
+source .venv/bin/activate
+# Trên Windows:
+.venv\Scripts\activate
 
-### 3. Cấu hình biến môi trường
-
-```bash
+# 3. Cấu hình biến môi trường
 cp .env.example .env
-```
+# Chỉnh sửa file .env với OPENAI_API_KEY và AI_LOG_API_KEY của bạn
 
-Mở `.env` và điền `OPENAI_API_KEY`. Riêng `AI_LOG_API_KEY`, mỗi thành viên tự
-tạo key riêng tại [dashboard Phoenix](https://phoenix.note.transformerlabs.ai/api-keys)
-rồi thay vào chỗ `<get-your-api-key-from-dashboard-phoenix>` — giá trị trong
-`.env.example` chỉ là placeholder, để nguyên thì log không vào được hệ thống chấm.
+# 4. Cài đặt phụ thuộc
+pip install -r requirements.txt
 
-### 4. Cài hook ghi log AI
-
-```bash
-bash scripts/setup_hooks.sh                                      # Linux / macOS / Git Bash
-powershell -ExecutionPolicy Bypass -File scripts\setup_hooks.ps1 # Windows PowerShell
-```
-
-Chạy một lần sau khi clone. Hook ghi lại prompt khi bạn dùng Claude Code, Cursor,
-Codex CLI, Gemini CLI, Antigravity hoặc GitHub Copilot, và cài pre-push hook để
-đẩy log lên server.
-
-### 5. Chạy server
-
-```bash
+# 5. Chạy development server
 uvicorn src.main:app --reload --port 8000
 ```
 
-Swagger UI ở <http://localhost:8000/docs>. Hoặc dùng `make run`, `make test`,
-`make lint` — xem `Makefile`.
+Truy cập Swagger UI API Documentation tại: `http://localhost:8000/docs`
 
-## Cấu trúc thư mục
+---
+
+## Project Structure
 
 ```
-src/
-  agents/            LangGraph agent
-    graph.py         State graph (nodes + edges)
-    state.py         State schema (TypedDict)
-    nodes/           Node functions
-    tools/           Agent tools (@tool)
-  api/routes.py      FastAPI endpoints
-  models/schemas.py  Pydantic schemas
-  services/llm.py    LLM client
-  config.py          Pydantic Settings
-  main.py            App entry point
-tests/               pytest suite
-scripts/             Hook ghi log AI + installer
-docs/
-  guide/             Technical Guidebook (nguồn của bản online)
-  architecture_diagram.md
-eval/                Kết quả evaluation
-presentation/        Slide và video Demo Day
-.claude/ .codex/ .cursor/ .gemini/ .agents/ .github/hooks/
-                     Config hook cho từng công cụ
-.github/workflows/   CI
-Dockerfile           Multi-stage build
-docker-compose.yml   Chạy backend bằng Docker
-README_boilerplate.md  Khung README cho dự án của đội
+.
+├── src/
+│   ├── agents/          # LangGraph agent definitions
+│   │   ├── graph.py     # Main state graph (nodes + edges)
+│   │   ├── state.py     # AgentState schema (TypedDict)
+│   │   ├── nodes/       # Node functions (parse, analyze, calculate, format)
+│   │   └── tools/       # Tools (pricing calculation, RAG search, PDF export)
+│   ├── api/             # FastAPI routes & handlers
+│   │   └── routes.py    # Endpoint definitions (/chat, /status, /configurate)
+│   ├── models/          # Pydantic data schemas
+│   │   └── schemas.py   # Request/Response models
+│   ├── services/        # Business logic (LLM client, pricing engine, RAG)
+│   ├── config.py        # Environment settings
+│   └── main.py          # FastAPI application entry point
+├── tests/               # Pytest suite (unit & integration tests)
+├── docs/                # Project documentation & architecture diagrams
+├── eval/                # Evaluation evidence & test suite results
+├── presentation/        # Demo Day pitch deck & video materials
+├── Dockerfile           # Multi-stage Docker build config
+├── docker-compose.yml   # Full stack deployment setup
+└── .github/workflows/   # CI/CD pipelines (ruff, pytest)
 ```
 
-## Technical Guidebook
+---
 
-| Chương | Nội dung | Thời gian |
-|---|---|---|
-| 1 | Lời mở đầu — mục tiêu, cách sử dụng | 15 phút |
-| 2 | Khởi tạo dự án — clone, setup, git workflow | 4 giờ |
-| 3 | Thiết kế kiến trúc — 3-tier, diagram, ADR | 6 giờ |
-| 4 | LangGraph Agent — state, node, edge, tool, RAG | 8 giờ |
-| 5 | FastAPI — routes, validation, error handling, streaming | 6 giờ |
-| 6 | Giao diện — Next.js và Streamlit | 6 giờ |
-| 7 | DevOps — Docker, CI/CD, deploy, logging | 6 giờ |
-| 8 | Kiểm thử — unit test, integration test, RAGAS | 4 giờ |
-| 9 | Demo Day — 10 deliverables, checklist | 2 giờ |
-| 10 | Tài nguyên — khoá học, tài liệu, BMAD method | tham khảo |
+## API Endpoints
 
-Đọc online tại <https://phoenix.note.transformerlabs.ai/technical-book>: đăng
-nhập bằng GitHub (đúng account đã được BTC mời vào org của khoá), chọn tab
-**Technical Book** ở sidebar trái. Bản offline nằm trong `docs/guide/`, mở được
-bằng bất kỳ markdown viewer nào.
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | Kiểm tra trạng thái hoạt động của hệ thống (Health check) |
+| `GET` | `/api/v1/status` | Kiểm tra trạng thái và phiên bản của LangGraph Agent |
+| `POST` | `/api/v1/chat` | Tương tác hội thoại tư vấn cấu hình xe với AI Agent |
+| `POST` | `/api/v1/configurate` | Gửi lựa chọn cấu hình xe và tính toán giá lăn bánh |
+| `POST` | `/api/v1/quote/approve` | Tư vấn viên duyệt báo giá chính thức (HITL) |
+| `POST` | `/api/v1/quote/export-pdf` | Xuất bảng báo giá định dạng PDF |
 
-## 10 deliverables cho Demo Day
+---
 
-| # | Deliverable | Vị trí | Template lo tới đâu |
-|---|---|---|---|
-| 1 | Source code | `src/` | Khung sẵn |
-| 2 | README | copy `README_boilerplate.md` thành `README.md` | Khung sẵn |
-| 3 | Architecture diagram | `docs/architecture_diagram.md` | Khung sẵn |
-| 4 | AI logs | LangSmith (3 biến môi trường) + auto AI usage logging | Cấu hình sẵn |
-| 5 | Live URL | deploy lên Render/Vercel | CI/CD sẵn |
-| 6 | Video demo | `presentation/` | Đội tự làm |
-| 7 | Pitch deck | `presentation/` | Đội tự làm |
-| 8 | Development journal | `JOURNAL.md` | Khung sẵn |
-| 9 | Worklog | `WORKLOG.md` | Khung sẵn |
-| 10 | Evaluation evidence | `eval/` | Đội tự làm |
+## Deliverables Checklist
 
-## Tech stack
+- [x] **Source Code**: Mã nguồn đầy đủ trên GitHub (`src/`)
+- [x] **README.md**: Tài liệu hướng dẫn & giới thiệu dự án hoàn chỉnh
+- [x] **Architecture Diagram**: Sơ đồ kiến trúc chi tiết (`docs/architecture_diagram.md` & `ARCHITECTURE.md`)
+- [x] **AI Logs**: Tự động thu thập & đồng bộ AI prompt logging
+- [ ] **Live URL**: Deploy phiên bản thử nghiệm trên Vercel / Render
+- [ ] **Video Demo**: Video trình diễn tính năng sản phẩm (`presentation/`)
+- [ ] **Pitch Deck**: Slide thuyết trình cho Demo Day (`presentation/`)
+- [x] **Development Journal**: Nhật ký phát triển hàng tuần (`JOURNAL.md`)
+- [x] **Worklog**: Nhập nhật ký công việc chi tiết (`WORKLOG.md`)
+- [ ] **Evaluation Evidence**: Bằng chứng đánh giá độ chính xác 100% trên bộ test giá (`eval/results/`)
 
-| Lớp | Công nghệ |
-|---|---|
-| Agent | LangGraph + LangChain 0.3 |
-| Backend | FastAPI 0.115 + Uvicorn |
-| LLM | OpenAI, mặc định `gpt-4o-mini` (đổi trong `src/config.py`) |
-| Giao diện | Next.js hoặc Streamlit (đội tự chọn, hướng dẫn ở chương 6) |
-| Lint / test | ruff + pytest 8 |
-| DevOps | Docker + GitHub Actions |
+---
 
-## AI usage logging
+## Team Members (Phòng C401)
 
-Mọi prompt được ghi vào `.ai-log/session.jsonl` và tự động gửi lên grading server
-ở bước pre-push.
+| Thành viên | Vai trò | MSSV | Chuyên môn / Đóng góp |
+|------------|---------|------|-----------------------|
+| **Nguyễn Đức Anh** 👑 | Team Lead / Fullstack / AI Engineer | `2A202602888` | Backend, Frontend, Machine Learning, UI/UX Design, Project Management, User Research |
+| **Lại Bá Quân** | Backend / Data & DevOps | `2A202602495` | Backend, Data Engineering, DevOps/Cloud, Prompt Engineering, Business Analysis |
+| **Đồng Mạnh Hùng** | ML & NLP Engineer / Backend | `2A202602412` | Machine Learning, NLP, Computer Vision, Business Analysis, Communication |
+| **Phùng Thành An** | UI/UX Designer / AI & DevOps Engineer | `2A202603006` | UI/UX Design, Computer Vision, Machine Learning, DevOps/Cloud, Product Management |
 
-| Công cụ | Cấu hình | Thời điểm ghi |
-|---|---|---|
-| Claude Code | `.claude/settings.json` | mỗi prompt (`UserPromptSubmit`) |
-| Cursor | `.cursor/hooks.json` | mỗi prompt và khi dừng |
-| OpenAI Codex CLI | `.codex/hooks.json` | mỗi prompt và khi dừng |
-| Gemini CLI | `.gemini/settings.json` | mỗi lượt agent chạy |
-| GitHub Copilot | `.github/hooks/hooks.json` | mỗi prompt và cuối session |
-| Antigravity IDE | `.agents/hooks.json` | mỗi prompt, kèm lần quét lại lúc `git push` |
-
-Dùng ChatGPT hay công cụ web khác thì log thủ công:
-
-```bash
-bash scripts/_pyrun.sh scripts/log_manual.py --tool chatgpt --prompt "What you asked"
-```
-
-## Đóng góp
-
-Repo này là open source. Đọc [CONTRIBUTING.md](CONTRIBUTING.md) trước khi mở PR.
-
-Nội dung trong `docs/guide/` là nguồn của Technical Book và được đồng bộ lên bản
-online, nên mọi thay đổi ở đó cần review của
-[@AI20K-Build-Phase/book-maintainers](https://github.com/orgs/AI20K-Build-Phase/teams/book-maintainers)
-— xem [.github/CODEOWNERS](.github/CODEOWNERS).
-
-Báo lỗ hổng bảo mật theo [SECURITY.md](SECURITY.md), đừng mở public issue.
+---
 
 ## License
 
-[MIT](LICENSE) — dùng tự do cho mục đích giáo dục.
+Dự án được phân phối dưới giấy phép [MIT License](LICENSE).
