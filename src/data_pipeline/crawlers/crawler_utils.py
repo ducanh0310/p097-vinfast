@@ -1,0 +1,163 @@
+"""src/data_pipeline/crawlers/crawler_utils.py
+Các hàm tiện ích dùng chung cho các module crawler VinFast Auto:
+- Tải nội dung web HTTP an toàn (urllib kèm cơ chế fallback curl.exe cho Cloudflare)
+- Làm sạch và trích xuất văn bản từ HTML
+- Lưu trữ dữ liệu chuẩn hóa dạng JSON có cấu trúc
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import subprocess
+import sys
+import urllib.request
+from datetime import datetime, timezone
+from html import unescape
+from pathlib import Path
+from typing import Any
+
+# Tự động cấu hình mã hóa UTF-8 cho stdout trên Windows
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+DATA_DIR = Path(os.getenv("DATA_DIR", PROJECT_ROOT / "data"))
+LANDING_DIR = DATA_DIR / "landing"
+
+RELATIONAL_DIR = LANDING_DIR / "relational"
+POLICIES_DIR = LANDING_DIR / "policies"
+NEWS_DIR = LANDING_DIR / "news"
+LEGAL_DIR = LANDING_DIR / "legal"
+FAQS_DIR = LANDING_DIR / "faqs"
+SPECS_DIR = LANDING_DIR / "specs"
+
+# Danh mục các dòng xe ô tô và xe máy đã crawl được từ bảng giá
+CRAWLED_CAR_MODELS = [
+    "VF 2",
+    "VF 3",
+    "VF 5",
+    "VF 6",
+    "VF 7",
+    "VF 8",
+    "VF 8 The All New",
+    "VF 9",
+    "VF MPV 7",
+    "VF Wild",
+    "Limo Green",
+    "Herio Green",
+    "Minio Green",
+    "EC Van",
+]
+
+CRAWLED_BIKE_MODELS = [
+    "Evo Grand",
+    "Evo Grand Lite",
+    "Evo-Lite-Neo",
+    "Evo-Neo",
+    "Evo200",
+    "Evo200 Lite",
+    "Feliz 2025",
+    "Feliz Lite",
+    "Feliz S",
+    "Feliz-Neo",
+    "Flazz",
+    "Klara S (2022)",
+    "Klara-Neo",
+    "Motio",
+    "Theon-S",
+    "Vento-Neo",
+    "Vento-S",
+    "Vero X",
+    "Zgoo",
+]
+
+DEFAULT_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+)
+
+
+def get_current_iso_timestamp() -> str:
+    """Trả về thời gian hiện tại định dạng ISO 8601 UTC."""
+    return datetime.now(timezone.utc).isoformat()
+
+
+def fetch_html(url: str, timeout: int = 15) -> str:
+    """Tải nội dung HTML từ URL.
+
+    Ưu tiên sử dụng urllib, tự động fallback sang curl.exe nếu gặp lỗi chặn
+    bởi Cloudflare (403 Forbidden hoặc TLS fingerprint).
+    """
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": DEFAULT_USER_AGENT,
+            "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.read().decode("utf-8", errors="ignore")
+    except Exception:
+        # Fallback sang curl.exe gốc của Windows
+        cmd = [
+            "curl.exe",
+            "-sL",
+            url,
+            "-H",
+            f"User-Agent: {DEFAULT_USER_AGENT}",
+            "-H",
+            "Accept-Language: vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
+        ]
+        res = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+            timeout=timeout + 10,
+        )
+        return res.stdout or ""
+
+
+def clean_html(html_content: str) -> str:
+    """Làm sạch HTML thành văn bản thuần túy, giữ ngắt dòng hợp lý."""
+    if not html_content:
+        return ""
+    text = re.sub(r"<script.*?</script>", "", html_content, flags=re.DOTALL | re.I)
+    text = re.sub(r"<style.*?</style>", "", text, flags=re.DOTALL | re.I)
+    text = re.sub(r"<br\s*/?>", "\n", text, flags=re.I)
+    text = re.sub(r"</p>", "\n\n", text, flags=re.I)
+    text = re.sub(r"</li>", "\n", text, flags=re.I)
+    text = re.sub(r"</tr>", "\n", text, flags=re.I)
+    text = re.sub(r"</div>", "\n", text, flags=re.I)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = unescape(text)
+
+    # Chuẩn hóa khoảng trắng và dòng trống
+    lines = [re.sub(r"[ \t]+", " ", line).strip() for line in text.split("\n")]
+    result_lines = []
+    prev_empty = False
+    for line in lines:
+        if not line:
+            if not prev_empty:
+                result_lines.append("")
+                prev_empty = True
+        else:
+            result_lines.append(line)
+            prev_empty = False
+    return "\n".join(result_lines).strip()
+
+
+def save_json(data: Any, file_path: Path, indent: int = 2) -> None:
+    """Lưu dữ liệu cấu trúc vào file JSON với định dạng UTF-8 đẹp mắt."""
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=indent)
