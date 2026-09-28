@@ -7,11 +7,14 @@ Các hàm tiện ích dùng chung cho các module crawler VinFast Auto:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import random
 import re
 import subprocess
 import sys
+import time
 import urllib.request
 from datetime import datetime, timezone
 from html import unescape
@@ -86,6 +89,68 @@ DEFAULT_USER_AGENT = (
 def get_current_iso_timestamp() -> str:
     """Trả về thời gian hiện tại định dạng ISO 8601 UTC."""
     return datetime.now(timezone.utc).isoformat()
+
+
+def random_delay(
+    min_seconds: float = 1.0, max_seconds: float = 2.2, verbose: bool = False
+) -> float:
+    """Tạm dừng ngẫu nhiên giữa các request để giả lập người dùng thật, tránh bị chặn bot/rate-limit."""
+    delay = round(random.uniform(min_seconds, max_seconds), 2)
+    if verbose:
+        print(f"   ⏳ Tạm dừng {delay}s để tránh kích hoạt cơ chế chặn bot...")
+    time.sleep(delay)
+    return delay
+
+
+def compute_content_hash(text: str) -> str:
+    """Tạo mã băm MD5 để định danh nội dung văn bản, phục vụ RAG deduplication và kiểm tra freshness."""
+    return hashlib.md5(text.encode("utf-8")).hexdigest()
+
+
+def build_rag_metadata(
+    *,
+    doc_id: str,
+    doc_type: str,
+    title: str,
+    category: str,
+    subcategory: str = "",
+    source_url: str = "",
+    applies_to: str = "Toàn bộ",
+    related_models: list[str] | None = None,
+    raw_content: str = "",
+    extra_fields: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Tạo đối tượng metadata chuẩn hóa phục vụ phân đoạn (chunking) và vector hóa RAG.
+
+    Bao gồm đầy đủ các thông tin: doc_id, doc_type, domain, language, category,
+    related_models, hash nội dung, số lượng ký tự và từ, timestamp thu thập.
+    """
+    now_iso = get_current_iso_timestamp()
+    clean_text = raw_content.strip() if raw_content else ""
+    words = clean_text.split()
+
+    meta: dict[str, Any] = {
+        "doc_id": doc_id,
+        "doc_type": doc_type,
+        "title": title,
+        "domain": "vinfastauto.com",
+        "source_url": source_url,
+        "language": "vi",
+        "category": category,
+        "subcategory": subcategory or category,
+        "applies_to": applies_to,
+        "related_models": related_models or [],
+        "is_general_info": len(related_models or []) == 0,
+        "pipeline_stage": "landing_raw",
+        "crawled_at": now_iso,
+        "content_hash": compute_content_hash(clean_text) if clean_text else "",
+        "char_count": len(clean_text),
+        "word_count": len(words),
+    }
+    if extra_fields:
+        meta.update(extra_fields)
+    return meta
+
 
 
 def fetch_html(url: str, timeout: int = 15) -> str:

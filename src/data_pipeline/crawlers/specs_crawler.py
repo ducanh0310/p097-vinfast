@@ -13,9 +13,11 @@ from typing import Any
 
 from src.data_pipeline.crawlers.crawler_utils import (
     SPECS_DIR,
+    build_rag_metadata,
     clean_html,
     fetch_html,
     get_current_iso_timestamp,
+    random_delay,
     save_json,
 )
 
@@ -192,18 +194,42 @@ def crawl_car_model_specs(cfg: dict[str, Any]) -> dict[str, Any] | None:
         if 20 < len(t) < 300 and t not in features:
             features.append(t)
 
+    spec_lines = [f"- {k}: {v}" for k, v in specs.items()]
+    feat_lines = [f"- {f}" for f in features]
+    raw_content = (
+        f"Dòng xe: {cfg['model_name']} ({cfg['segment']})\n"
+        f"Mô tả: {description}\n\n"
+        f"Thông số kỹ thuật:\n" + ("\n".join(spec_lines) if spec_lines else "Đang cập nhật") + "\n\n"
+        f"Tính năng nổi bật:\n" + ("\n".join(feat_lines) if feat_lines else "Đang cập nhật")
+    ).strip()
+
+    metadata = build_rag_metadata(
+        doc_id=f"doc_specs_{cfg['slug']}",
+        doc_type="vehicle_spec",
+        title=f"Thông số kỹ thuật và tính năng xe VinFast {cfg['model_name']}",
+        category="Thông số kỹ thuật",
+        subcategory=cfg["segment"],
+        source_url=url,
+        applies_to=f"Dòng xe {cfg['model_name']}",
+        related_models=[cfg["model_name"]],
+        raw_content=raw_content,
+        extra_fields={
+            "segment": cfg["segment"],
+            "seats": cfg["seats"],
+            "specifications_count": len(specs),
+        },
+    )
+
     return {
+        "metadata": metadata,
         "model_name": cfg["model_name"],
         "slug": cfg["slug"],
         "segment": cfg["segment"],
         "seats": cfg["seats"],
-        "page_title": title,
         "description": description,
-        "source_url": url,
-        "crawled_at": get_current_iso_timestamp(),
-        "specifications_count": len(specs),
         "specifications": specs,
         "key_features": features,
+        "raw_content": raw_content,
     }
 
 
@@ -218,7 +244,10 @@ def run_specs_crawl() -> dict[str, Any]:
     SPECS_DIR.mkdir(parents=True, exist_ok=True)
     all_specs: list[dict[str, Any]] = []
 
-    for cfg in CAR_PRODUCT_PAGES:
+    for idx, cfg in enumerate(CAR_PRODUCT_PAGES):
+        if idx > 0:
+            random_delay(1.0, 2.0)
+
         print(f"🌐 Đang crawl specs: {cfg['model_name']} ({cfg['slug']}) ...")
         res = crawl_car_model_specs(cfg)
         if not res:
@@ -228,7 +257,8 @@ def run_specs_crawl() -> dict[str, Any]:
         out_file = SPECS_DIR / f"{cfg['slug']}_specs.json"
         save_json(res, out_file)
         all_specs.append(res)
-        print(f"   ✅ Đã lưu: {out_file.name} ({res['specifications_count']} thông số)")
+        print(f"   ✅ Đã lưu: {out_file.name} ({len(res['specifications'])} thông số)")
+
 
     # Lưu tập tin tổng hợp toàn bộ thông số các dòng xe
     combined_file = SPECS_DIR / "vinfast_car_specifications.json"
@@ -242,9 +272,10 @@ def run_specs_crawl() -> dict[str, Any]:
             {
                 "model_name": s["model_name"],
                 "segment": s["segment"],
-                "specs_count": s["specifications_count"],
+                "specs_count": len(s["specifications"]),
             }
             for s in all_specs
+
         ],
     }
     summary_file = SPECS_DIR / "specs_summary.json"

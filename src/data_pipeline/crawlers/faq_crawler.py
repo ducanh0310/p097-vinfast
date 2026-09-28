@@ -14,9 +14,11 @@ from src.data_pipeline.crawlers.crawler_utils import (
     CRAWLED_BIKE_MODELS,
     CRAWLED_CAR_MODELS,
     FAQS_DIR,
+    build_rag_metadata,
     clean_html,
     fetch_html,
     get_current_iso_timestamp,
+    random_delay,
     save_json,
 )
 
@@ -97,18 +99,29 @@ def parse_faqs_from_html(html: str) -> list[dict[str, Any]]:
                 if is_legacy and not related_ev:
                     continue
 
+                raw_content = f"Câu hỏi: {question}\n\nTrả lời: {answer}"
+                doc_id = f"faq-{item_idx:04d}"
+
+                metadata = build_rag_metadata(
+                    doc_id=doc_id,
+                    doc_type="faq",
+                    title=question,
+                    category=category,
+                    subcategory=subcategory,
+                    source_url=FAQ_PAGE_URL,
+                    applies_to="Khách hàng sử dụng ô tô & xe máy điện VinFast",
+                    related_models=related_ev,
+                    raw_content=raw_content,
+                )
+
                 results.append({
-                    "id": f"faq-{item_idx:04d}",
-                    "category": category,
-                    "subcategory": subcategory,
+                    "metadata": metadata,
                     "question": question,
                     "answer": answer,
-                    "related_models": related_ev,
-                    "is_general": len(related_ev) == 0,
-                    "source_url": FAQ_PAGE_URL,
-                    "crawled_at": timestamp,
+                    "raw_content": raw_content,
                 })
                 item_idx += 1
+
 
     return results
 
@@ -138,9 +151,10 @@ def run_faq_crawl() -> dict[str, Any]:
     # 2. Gom nhóm theo Category và Subcategory
     by_cat: dict[str, dict[str, list[dict[str, Any]]]] = {}
     for item in faqs:
-        c = item["category"]
-        sc = item["subcategory"]
+        c = item["metadata"]["category"]
+        sc = item["metadata"]["subcategory"]
         by_cat.setdefault(c, {}).setdefault(sc, []).append(item)
+
 
     grouped_file = FAQS_DIR / "vinfast_faqs_by_category.json"
     save_json(by_cat, grouped_file)

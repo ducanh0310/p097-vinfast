@@ -19,9 +19,11 @@ from src.data_pipeline.crawlers.crawler_utils import (
     CRAWLED_CAR_MODELS,
     LEGAL_DIR,
     POLICIES_DIR,
+    build_rag_metadata,
     clean_html,
     fetch_html,
     get_current_iso_timestamp,
+    random_delay,
     save_json,
 )
 
@@ -200,17 +202,25 @@ def crawl_policy_page(cfg: dict[str, str]) -> dict[str, Any] | None:
         main_text = full_text
 
     related = _extract_related_models(main_text)
+    doc_type = "legal" if cfg["type"] == "legal" else "policy"
+    parent_category = "Pháp lý" if cfg["type"] == "legal" else "Chính sách"
+
+    metadata = build_rag_metadata(
+        doc_id=f"doc_{doc_type}_{cfg['id']}",
+        doc_type=doc_type,
+        title=h1 or title,
+        category=parent_category,
+        subcategory=cfg["category"],
+        source_url=url,
+        applies_to=cfg["applies_to"],
+        related_models=related,
+        raw_content=main_text,
+    )
 
     return {
-        "id": cfg["id"],
-        "title": h1 or title,
-        "category": cfg["category"],
-        "applies_to": cfg["applies_to"],
-        "source_url": url,
-        "crawled_at": get_current_iso_timestamp(),
-        "related_models": related,
+        "metadata": metadata,
         "sections": sections,
-        "full_content": main_text,
+        "raw_content": main_text,
     }
 
 
@@ -229,7 +239,10 @@ def run_policy_crawl() -> dict[str, Any]:
     legal_list: list[dict[str, Any]] = []
     created_files: list[str] = []
 
-    for cfg in POLICY_CONFIGS:
+    for idx, cfg in enumerate(POLICY_CONFIGS):
+        if idx > 0:
+            random_delay(1.0, 2.0)
+
         print(f"🌐 Đang crawl: {cfg['slug']} ...")
         res = crawl_policy_page(cfg)
         if not res:
@@ -239,12 +252,13 @@ def run_policy_crawl() -> dict[str, Any]:
         out_file = target_dir / cfg["file_name"]
         save_json(res, out_file)
         created_files.append(out_file.name)
-        print(f"   ✅ Đã lưu: {cfg['type']}/{out_file.name} ({len(res['full_content']):,} ký tự)")
+        print(f"   ✅ Đã lưu: {cfg['type']}/{out_file.name} ({res['metadata']['char_count']:,} ký tự)")
 
         if cfg["type"] == "legal":
             legal_list.append(res)
         else:
             policies_list.append(res)
+
 
     # Lưu thêm file tổng hợp cho policies và legal
     all_policies_file = POLICIES_DIR / "vinfast_policies_all.json"

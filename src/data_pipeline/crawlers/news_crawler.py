@@ -16,9 +16,11 @@ from src.data_pipeline.crawlers.crawler_utils import (
     CRAWLED_BIKE_MODELS,
     CRAWLED_CAR_MODELS,
     NEWS_DIR,
+    build_rag_metadata,
     clean_html,
     fetch_html,
     get_current_iso_timestamp,
+    random_delay,
     save_json,
 )
 
@@ -130,17 +132,26 @@ def crawl_single_article(link: str, default_category: str) -> dict[str, Any] | N
     if len(summary) > 300:
         summary = summary[:297] + "..."
 
+    metadata = build_rag_metadata(
+        doc_id=f"doc_news_{slug}",
+        doc_type="news",
+        title=title,
+        category="Tin tức",
+        subcategory=default_category,
+        source_url=url,
+        applies_to="Khách hàng quan tâm ô tô điện & hệ sinh thái VinFast",
+        related_models=related_models,
+        raw_content=body_text,
+        extra_fields={
+            "published_date": pub_date,
+        },
+    )
+
     return {
-        "id": slug,
-        "title": title,
-        "category": default_category,
-        "published_date": pub_date,
-        "source_url": url,
-        "crawled_at": get_current_iso_timestamp(),
+        "metadata": metadata,
         "summary": summary,
-        "related_models": related_models,
-        "is_general_company": len(related_models) == 0,
-        "full_content": body_text,
+        "published_date": pub_date,
+        "raw_content": body_text,
     }
 
 
@@ -172,17 +183,26 @@ def run_news_crawl() -> dict[str, Any]:
                 continue
             seen_urls.add(link)
 
+            # Delay ngẫu nhiên giữa các bài viết để chống chặn bot
+            random_delay(1.0, 2.0)
             article = crawl_single_article(link, feed["category"])
             if not article:
                 continue
 
-            # Lưu từng file bài viết riêng lẻ
-            out_file = articles_dir / f"{article['id']}.json"
+            slug = article["metadata"]["doc_id"].replace("doc_news_", "")
+            out_file = articles_dir / f"{slug}.json"
             save_json(article, out_file)
 
             all_articles.append(article)
-            models_tag = ", ".join(article["related_models"]) if article["related_models"] else "Thông tin chung"
-            print(f"   ✅ [{article['published_date'] or 'N/A'}] {article['title'][:50]}... ({models_tag})")
+            models_tag = (
+                ", ".join(article["metadata"]["related_models"])
+                if article["metadata"]["related_models"]
+                else "Thông tin chung"
+            )
+            print(
+                f"   ✅ [{article['published_date'] or 'N/A'}] "
+                f"{article['metadata']['title'][:50]}... ({models_tag})"
+            )
 
     # Lưu tập tin tổng hợp tất cả bài viết
     all_news_file = NEWS_DIR / "vinfast_news_articles.json"
@@ -194,15 +214,18 @@ def run_news_crawl() -> dict[str, Any]:
         "total_articles": len(all_articles),
         "crawled_at": get_current_iso_timestamp(),
         "categories": {
-            feed["category"]: len([a for a in all_articles if a["category"] == feed["category"]])
+            feed["category"]: len([
+                a for a in all_articles if a["metadata"]["subcategory"] == feed["category"]
+            ])
             for feed in NEWS_FEED_URLS
         },
         "model_mentions_count": {
-            car: len([a for a in all_articles if car in a["related_models"]])
+            car: len([a for a in all_articles if car in a["metadata"]["related_models"]])
             for car in CRAWLED_CAR_MODELS
-            if any(car in a["related_models"] for a in all_articles)
+            if any(car in a["metadata"]["related_models"] for a in all_articles)
         },
     }
+
     summary_file = NEWS_DIR / "news_summary.json"
     save_json(summary, summary_file)
     print(f"📁 Đã xuất: {summary_file.name} (Báo cáo tổng quan)")

@@ -1,233 +1,155 @@
-# VinFast Auto Data Pipeline (Task 1)
+# VinFast Auto Data Pipeline
 
-Thư mục `src/data_pipeline` chịu trách nhiệm thu thập (crawl), bóc tách, chuẩn hóa và lưu trữ toàn bộ dữ liệu từ hệ sinh thái [VinFast Auto Việt Nam](https://vinfastauto.com/vn_vi) và [VinFast Shop](https://shop.vinfastauto.com/vn_vi/chi-phi-lan-banh), phục vụ cơ sở dữ liệu và AI RAG Pipeline của dự án.
+> **🕒 Lần cập nhật script gần nhất (Last Updated):** `2026-09-28 23:30 (GMT+7)`
+> **📦 Phiên bản (Version):** `v1.2.0`
+> **⏱️ Chu kỳ kiểm tra khuyến nghị:** 7 – 14 ngày (hoặc kích hoạt chạy lại khi VinFast công bố bảng giá/chính sách/dòng xe mới để tránh outdate dữ liệu)
 
 ---
 
 ## 📌 Tổng quan mục đích & Phạm vi thu thập
 
-Hệ thống pipeline được mở rộng để thu thập đầy đủ cả **dữ liệu dạng bảng quan hệ (relational tabular)** và **dữ liệu văn bản phi cấu trúc / bán cấu trúc (unstructured & semi-structured JSON)**:
+Hệ thống pipeline được xây dựng để thu thập toàn diện từ hệ sinh thái [VinFast Auto Việt Nam](https://vinfastauto.com/vn_vi) và [VinFast Shop](https://shop.vinfastauto.com/vn_vi/chi-phi-lan-banh), phục vụ xây dựng kho tri thức cho hệ thống AI RAG Pipeline:
 
-1. **Bảng giá & Chi phí lăn bánh (Relational CSV)**:
-   - Toàn bộ các dòng ô tô và xe máy điện đang kinh doanh hoặc mở đặt cọc.
-   - Giá bán niêm yết, giá kèm pin / thuê pin, giá pin rời.
-   - Ma trận tùy chọn màu sắc cơ bản (0 đ) và nâng cao (+8.000.000 đ).
-   - Biểu phí cấp biển số, thuế trước bạ 63 tỉnh thành (KV1, KV2, KV3).
-   - Các gói ưu đãi giảm giá và ma trận tính toán chi phí lăn bánh hoàn chỉnh.
+1. **Bảng giá & Dự toán lăn bánh (Relational Tabular CSV)**:
 
+   - Bảng giá niêm yết, giá kèm pin / thuê pin cho toàn bộ các dòng ô tô và xe máy điện.
+   - Toàn bộ danh mục tùy chọn màu sắc xe & biểu phí màu cơ bản / nâng cao.
+   - Biểu phí đăng ký biển số và thuế trước bạ cho 63 tỉnh/thành phố (KV1, KV2, KV3).
+   - 8 chương trình ưu đãi giảm giá (VinClub, O2O, Chuyển đổi xanh...).
+   - Ma trận dự toán chi phí lăn bánh hoàn chỉnh cho tất cả các dòng xe và tỉnh thành.
 2. **Câu hỏi thường gặp (FAQs JSON)**:
-   - 400 câu hỏi & giải đáp chi tiết từ VinFast chia theo danh mục đa tầng: Chính sách bán hàng, Chính sách hậu mãi, Sạc pin, Hệ thống trạm sạc, Trợ lý ảo, Thông tin xe...
-   - Lọc chính xác theo các dòng xe đã crawl và chính sách áp dụng toàn công ty.
 
-3. **Chính sách & Điều khoản pháp lý (Policies & Legal JSON)**:
+   - 400 câu hỏi & giải đáp chi tiết từ VinFast phân cấp theo danh mục: Bán hàng, Hậu mãi, Sạc pin, Trạm sạc, Trợ lý ảo...
+   - Đã được làm sạch, gắn thẻ phân loại và liên kết với các dòng xe cụ thể.
+3. **Chính sách sản phẩm, hậu mãi & Pháp lý (Policies & Legal JSON)**:
+
    - Chính sách bảo hành chính hãng ô tô (10 năm / 200.000 km) và xe máy điện.
-   - Dịch vụ cứu hộ 24/7 toàn quốc, cứu hộ pin khẩn cấp.
+   - Dịch vụ cứu hộ 24/7 toàn quốc & cứu hộ sạc pin khẩn cấp.
    - Chính sách thuê pin, đổi trả và thiết bị sạc tại nhà.
-   - Lịch bảo dưỡng định kỳ và dịch vụ sửa chữa chính hãng.
-   - Hợp đồng mua bán xe, chính sách đặt cọc và giao nhận xe.
-   - Điều khoản pháp lý và chính sách bảo mật quyền riêng tư.
+   - Quy trình và lịch bảo dưỡng định kỳ, dịch vụ sửa chữa chính hãng.
+   - Hợp đồng mua bán xe, điều khoản pháp lý và chính sách bảo mật quyền riêng tư.
+4. **Tin tức & Thông cáo sản phẩm mới (News JSON)**:
 
-4. **Tin tức & Thông cáo sản phẩm (News JSON)**:
-   - Tin tức ra mắt các dòng xe mới (VF Wild, VF MPV 7, VF 8 thế hệ mới, Evo Grand...).
-   - Chương trình ưu đãi, nâng cấp phụ kiện (Apple CarPlay cho VF 3...).
-   - Thông cáo báo chí, phát triển mạng lưới đại lý và chiến dịch chuyển đổi xanh.
-
+   - 24 bài viết tin tức, thông cáo ra mắt xe (VF Wild, VF MPV 7, VF 8 thế hệ mới, Evo Grand...).
+   - Chương trình nâng cấp phần cứng/phần mềm (Apple CarPlay/Android Auto cho VF 3...).
+   - Báo cáo tăng trưởng, hợp tác mạng lưới đại lý và chiến dịch chuyển đổi xanh.
 5. **Thông số kỹ thuật chi tiết (Vehicle Specs JSON)**:
-   - Bảng thông số kỹ thuật chi tiết (Dimensions, Motor, Battery, NEDC Range, Charging, Seating, Safety & ADAS) cho tất cả 14 dòng ô tô đã crawl được: **VF 2, VF 3, VF 5, VF 6, VF 7, VF 8, VF 8 The All New, VF 9, VF MPV 7, VF Wild, Limo Green, Herio Green, Minio Green, EC Van**.
+
+   - Bảng thông số kỹ thuật chi tiết (Kích thước, Động cơ, Pin, Quãng đường NEDC, Sạc nhanh, Chỗ ngồi, Túi khí, ADAS) của 14 dòng ô tô: **VF 2, VF 3, VF 5, VF 6, VF 7, VF 8, VF 8 The All New, VF 9, VF MPV 7, VF Wild, Limo Green, Herio Green, Minio Green, EC Van**.
 
 ---
 
-## 📂 Cấu trúc thư mục mã nguồn & dữ liệu
+## 🛡️ Cơ chế chống chặn Bot & Rate Limiting
 
-### 1. Kiến trúc module hóa mã nguồn (`src/data_pipeline/`)
-Để đảm bảo tính module hóa, dễ bảo trì và **tuân thủ nghiêm ngặt giới hạn mỗi file Python không quá 600 dòng**, mã nguồn được chia thành các crawler chuyên biệt:
+Để bảo đảm quá trình crawl an toàn, ổn định và không làm quá tải máy chủ nguồn:
+
+1. **Randomized Polite Delay (`random_delay`)**:
+   - Tự động tạm dừng ngẫu nhiên từ `1.0s` đến `2.2s` giữa các lượt gửi HTTP request liên tiếp.
+   - Giúp mô phỏng hành vi duyệt web tự nhiên của người dùng thật, ngăn ngừa triệt để các mã lỗi HTTP `429 Too Many Requests` hoặc bị tạm khóa IP.
+2. **Cơ chế Fallback Cloudflare hai tầng**:
+   - `urllib.request` kèm headers trình duyệt chuẩn (`User-Agent`, `Accept-Language`, `Referer`).
+   - Tự động fallback sang `curl.exe` tích hợp sẵn trên hệ điều hành khi phát hiện máy chủ kích hoạt kiểm tra chữ ký TLS (Cloudflare JA3 Fingerprint).
+
+---
+
+## 🧩 Chuẩn bị Metadata cho RAG Chunking (Landing Raw Stage)
+
+Mọi tập tin JSON đầu ra trong `data/landing/` đều được trang bị đối tượng chuẩn hóa `metadata` nhằm chuẩn bị tốt nhất cho giai đoạn tiếp theo (Phase 2: RAG Chunking, Embeddings & Vector Indexing), trong khi vẫn giữ nguyên tính toàn vẹn của văn bản gốc thô (`raw_content`):
+
+```json
+{
+  "metadata": {
+    "doc_id": "doc_news_vinfast-chinh-thuc-nhan-dat-coc-vf-mpv-7-tai-an-do",
+    "doc_type": "news",
+    "title": "VINFAST CHÍNH THỨC NHẬN ĐẶT CỌC VF MPV 7 TẠI ẤN ĐỘ",
+    "domain": "vinfastauto.com",
+    "source_url": "https://vinfastauto.com/vn_vi/vinfast-chinh-thuc-nhan-dat-coc-vf-mpv-7-tai-an-do",
+    "language": "vi",
+    "category": "Tin tức",
+    "subcategory": "Ô tô điện",
+    "applies_to": "Khách hàng quan tâm ô tô điện & hệ sinh thái VinFast",
+    "related_models": ["VF 6", "VF 7", "VF MPV 7"],
+    "is_general_info": false,
+    "pipeline_stage": "landing_raw",
+    "crawled_at": "2026-09-28T16:29:05.431743+00:00",
+    "content_hash": "917b0ebf4fdb57480cf1fb58fc98de28",
+    "char_count": 3908,
+    "word_count": 852,
+    "published_date": "02/04/2026"
+  },
+  "summary": "...",
+  "published_date": "02/04/2026",
+  "raw_content": "..."
+}
+```
+
+### Ý nghĩa các trường Metadata:
+
+- `doc_id`: Mã định danh duy nhất của tài liệu gốc, dùng để tham chiếu ngược từ các chunk văn bản sau này.
+- `doc_type`: Phân loại tài liệu (`faq`, `policy`, `legal`, `news`, `vehicle_spec`), hỗ trợ metadata filtering trong RAG.
+- `related_models`: Danh sách các dòng xe được đề cập (ví dụ: `["VF 3"]`), cho phép LLM lọc đúng ngữ cảnh xe mà người dùng đang hỏi.
+- `content_hash`: Mã băm MD5 của nội dung, phục vụ việc kiểm tra trùng lặp (deduplication) và phát hiện khi nào dữ liệu nguồn bị thay đổi.
+- `char_count` & `word_count`: Hỗ trợ thuật toán chunker tự động tính toán kích thước cửa sổ chia đoạn (chunk window size) tối ưu.
+- `pipeline_stage`: Đánh dấu rõ ràng đây là dữ liệu thô tầng Landing (`landing_raw`), chưa qua xử lý làm sạch hay chia đoạn.
+
+---
+
+## 📂 Cấu trúc mã nguồn & Giới hạn số dòng file
+
+Mã nguồn tuân thủ nghiêm ngặt nguyên tắc Clean Architecture và **mỗi file Python không vượt quá 600 dòng**:
 
 ```text
 src/data_pipeline/
-├── task1_vinfast_auto_crawl_data.py   # Entrypoint chính (Orchestrator + CLI flags) (~200 dòng)
+├── task1_vinfast_auto_crawl_data.py   # Entrypoint chính (CLI + Orchestrator) (204 dòng)
 ├── README.md                          # Tài liệu kỹ thuật chi tiết (file này)
 └── crawlers/                          # Gói các module crawler chuyên biệt
-    ├── __init__.py                    # Khởi tạo package
-    ├── crawler_utils.py               # Tiện ích HTTP an toàn, bypass Cloudflare, clean HTML (~160 dòng)
-    ├── relational_crawler.py          # Bóc tách bảng giá & dự toán lăn bánh CSV (~500 dòng)
-    ├── faq_crawler.py                 # Bóc tách và phân loại FAQ JSON (~170 dòng)
-    ├── policy_crawler.py              # Bóc tách chính sách & pháp lý JSON (~270 dòng)
-    ├── news_crawler.py                # Bóc tách tin tức & thông cáo báo chí JSON (~220 dòng)
-    └── specs_crawler.py               # Bóc tách thông số kỹ thuật xe ô tô JSON (~260 dòng)
+    ├── __init__.py                    # Package init (3 dòng)
+    ├── crawler_utils.py               # Tiện ích HTTP, delay, hash & RAG metadata (228 dòng)
+    ├── relational_crawler.py          # Bóc tách bảng giá & dự toán lăn bánh CSV (502 dòng)
+    ├── faq_crawler.py                 # Bóc tách 400 FAQ & phân cấp danh mục (185 dòng)
+    ├── policy_crawler.py              # Bóc tách chính sách dịch vụ & pháp lý (282 dòng)
+    ├── news_crawler.py                # Bóc tách tin tức & thông cáo sản phẩm (241 dòng)
+    └── specs_crawler.py               # Bóc tách thông số kỹ thuật 14 dòng xe (293 dòng)
 ```
 
-### 2. Cấu trúc thư mục dữ liệu đầu ra (`data/landing/`)
+---
+
+## 📂 Thư mục dữ liệu đầu ra (`data/landing/`)
 
 ```text
 data/landing/
-├── relational/                        # Dữ liệu dạng bảng CSV quan hệ
-│   ├── vinfast_car_editions_pricing.csv   # Giá niêm yết & phí cố định theo phiên bản ô tô
-│   ├── vinfast_car_color_options.csv      # Danh mục màu sắc, loại màu, phụ phí & ảnh màu
-│   ├── vinfast_provinces_fees.csv         # 63 tỉnh thành & biểu phí ra biển, trước bạ
-│   ├── vinfast_promotions.csv             # 8 chương trình ưu đãi (VinClub, O2O...)
-│   ├── vinfast_bike_pricing.csv           # Bảng giá 19 dòng xe máy điện & thuê pin
-│   └── vinfast_car_rolling_costs.csv      # 216 ma trận dự toán chi phí lăn bánh hoàn chỉnh
-│
-├── faqs/                              # Câu hỏi thường gặp FAQ (JSON)
-│   ├── vinfast_faqs.json                  # Toàn bộ 400 câu hỏi & đáp đã làm sạch và gắn thẻ
-│   ├── vinfast_faqs_by_category.json      # Phân cấp theo danh mục cha & con
-│   └── vinfast_faqs_summary.json          # Báo cáo tổng hợp số lượng theo danh mục
-│
-├── policies/                          # Chính sách dịch vụ & hậu mãi (JSON)
-│   ├── vinfast_car_warranty_policy.json   # Chính sách bảo hành ô tô
-│   ├── vinfast_bike_warranty_policy.json  # Chính sách bảo hành xe máy điện
-│   ├── vinfast_car_battery_service.json   # Dịch vụ pin & sạc ô tô
-│   ├── vinfast_bike_battery_service.json  # Dịch vụ pin xe máy điện
-│   ├── vinfast_rescue_service.json        # Cứu hộ 24/7 & cứu hộ pin
-│   ├── vinfast_maintenance_service.json   # Lịch trình & quy trình bảo dưỡng
-│   ├── vinfast_repair_service.json        # Dịch vụ sửa chữa & phụ tùng
-│   ├── vinfast_sales_contracts_and_policies.json # Hợp đồng & chính sách bán hàng
-│   ├── vinfast_charging_stations_policy.json     # Quy định trạm sạc V-GREEN
-│   └── vinfast_policies_all.json          # File tổng hợp toàn bộ chính sách
-│
-├── legal/                             # Điều khoản pháp lý & bảo mật (JSON)
-│   ├── vinfast_legal_terms.json           # Điều khoản và điều kiện pháp lý chung
-│   ├── vinfast_privacy_policy.json        # Chính sách bảo vệ dữ liệu cá nhân
-│   └── vinfast_legal_all.json             # File tổng hợp pháp lý
-│
-├── news/                              # Tin tức & Thông cáo sản phẩm (JSON)
-│   ├── articles/                          # Từng bài viết chi tiết riêng biệt (<slug>.json)
-│   ├── vinfast_news_articles.json         # Danh mục tổng hợp tất cả bài viết tin tức
-│   └── news_summary.json                  # Báo cáo tổng quan số lượng bài theo dòng xe
-│
-└── specs/                             # Thông số kỹ thuật chi tiết ô tô (JSON)
-    ├── <model_slug>_specs.json            # Thông số kỹ thuật cho từng dòng xe (VF 3, VF 5,...)
-    ├── vinfast_car_specifications.json    # File tổng hợp thông số 14 dòng xe
-    └── specs_summary.json                 # Báo cáo thống kê specs
+├── relational/                        # 6 CSV: bảng giá, màu xe, biểu phí, khuyến mãi, lăn bánh
+├── faqs/                              # 3 JSON: vinfast_faqs.json (400 câu), phân cấp & tổng quan
+├── policies/                          # 10 JSON: bảo hành, pin, cứu hộ, bảo dưỡng, hợp đồng
+├── legal/                             # 3 JSON: điều khoản pháp lý & chính sách quyền riêng tư
+├── news/                              # 26 JSON: 24 bài viết chi tiết + file tổng hợp + báo cáo
+└── specs/                             # 16 JSON: 14 dòng xe (VF 2 -> VF Wild, Limo Green...) + tổng hợp
 ```
 
 ---
 
-## 🚀 Hướng dẫn thực thi Pipeline
+## 🚀 Hướng dẫn thực thi
 
-### Điều kiện tiên quyết
-- Python 3.9 trở lên.
-- Sử dụng toàn bộ thư viện chuẩn của Python (`urllib`, `json`, `csv`, `pathlib`, `re`, `subprocess`). Không bắt buộc cài đặt thêm package ngoài.
+Từ thư mục gốc dự án:
 
-### Lệnh thực thi chính
+```powershell
+# Chạy toàn bộ pipeline (Relational CSVs + FAQs + Policies + Legal + News + Specs):
+python src/data_pipeline/task1_vinfast_auto_crawl_data.py
 
-1. **Chạy toàn bộ pipeline (khuyến nghị)**:
-   ```powershell
-   python src/data_pipeline/task1_vinfast_auto_crawl_data.py
-   # hoặc:
-   python src/data_pipeline/task1_vinfast_auto_crawl_data.py --all
-   ```
-
-2. **Chạy từng tác vụ độc lập**:
-   ```powershell
-   # Chỉ crawl bảng giá & dự toán lăn bánh (CSV):
-   python src/data_pipeline/task1_vinfast_auto_crawl_data.py --relational
-
-   # Chỉ crawl FAQ (JSON):
-   python src/data_pipeline/task1_vinfast_auto_crawl_data.py --faqs
-
-   # Chỉ crawl Chính sách bảo hành, pin, cứu hộ & Pháp lý (JSON):
-   python src/data_pipeline/task1_vinfast_auto_crawl_data.py --policies
-
-   # Chỉ crawl Tin tức & Thông cáo báo chí (JSON):
-   python src/data_pipeline/task1_vinfast_auto_crawl_data.py --news
-
-   # Chỉ crawl Thông số kỹ thuật chi tiết (JSON):
-   python src/data_pipeline/task1_vinfast_auto_crawl_data.py --specs
-   ```
-
----
-
-## 📊 Mô tả cấu trúc Schema JSON
-
-### 1. FAQ Item Schema (`data/landing/faqs/vinfast_faqs.json`)
-```json
-{
-  "id": "faq-0001",
-  "category": "Ô tô VinFast",
-  "subcategory": "Chính sách bán hàng",
-  "question": "Tôi có được huỷ cọc xe không?",
-  "answer": "Đối với đơn hàng đặt cọc trước: Quý khách được chuyển nhượng/chuyển giao...",
-  "related_models": [],
-  "is_general": true,
-  "source_url": "https://vinfastauto.com/vn_vi/cau-hoi-thuong-gap",
-  "crawled_at": "2026-09-28T16:04:12.345678+00:00"
-}
-```
-
-### 2. Policy Schema (`data/landing/policies/vinfast_car_warranty_policy.json`)
-```json
-{
-  "id": "warranty-car",
-  "title": "Chính sách bảo hành ô tô VinFast",
-  "category": "Bảo hành",
-  "applies_to": "Ô tô điện VinFast (VF 3, VF 5, VF 6, VF 7, VF 8, VF 9...)",
-  "source_url": "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-oto",
-  "crawled_at": "2026-09-28T16:05:00.000000+00:00",
-  "related_models": ["VF 3", "VF 5", "VF 6", "VF 7", "VF 8", "VF 9"],
-  "sections": [
-    {
-      "section_title": "Thời hạn bảo hành xe mới",
-      "content": "Thời hạn bảo hành 10 năm hoặc 200.000 km áp dụng cho các dòng VF 7, VF 8, VF 9..."
-    }
-  ],
-  "full_content": "..."
-}
-```
-
-### 3. News Article Schema (`data/landing/news/articles/<slug>.json`)
-```json
-{
-  "id": "nang-cap-apple-carplayandroid-auto-cho-vf-3-chi-tu-29-trieu-dong",
-  "title": "NÂNG CẤP APPLE CARPLAY/ANDROID AUTO CHO VF 3 CHỈ TỪ 2,9 TRIỆU ĐỒNG*",
-  "category": "Ô tô điện",
-  "published_date": "20/04/2026",
-  "source_url": "https://vinfastauto.com/vn_vi/nang-cap-apple-carplayandroid-auto-cho-vf-3-chi-tu-29-trieu-dong",
-  "crawled_at": "2026-09-28T16:06:00.000000+00:00",
-  "summary": "VinFast chính thức triển khai mở rộng chương trình nâng cấp Apple CarPlay/Android Auto...",
-  "related_models": ["VF 3"],
-  "is_general_company": false,
-  "full_content": "..."
-}
-```
-
-### 4. Vehicle Specs Schema (`data/landing/specs/vf-3_specs.json`)
-```json
-{
-  "model_name": "VF 3",
-  "slug": "vf-3",
-  "segment": "Mini SUV",
-  "seats": 4,
-  "page_title": "VinFast VF 3 - Thông số, giá bán mới nhất",
-  "description": "VinFast VF 3 là mẫu xe điện cỡ nhỏ với thiết kế cá tính, quãng đường 215 km/lần sạc...",
-  "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf3",
-  "crawled_at": "2026-09-28T16:07:00.000000+00:00",
-  "specifications_count": 12,
-  "specifications": {
-    "Dài x Rộng x Cao (mm)": "3.190 x 1.679 x 1.652",
-    "Chiều dài cơ sở (mm)": "2.075",
-    "Khoảng sáng gầm xe (mm)": "191",
-    "Công suất tối đa": "30 kW/hp",
-    "Mô men xoắn cực đại": "110 Nm",
-    "Quãng đường di chuyển (NEDC)": "215km/1 lần sạc",
-    "Dung lượng pin khả dụng": "18.64 kWh",
-    "Sạc nhanh từ 10% - 70%": "36 phút",
-    "Công suất sạc nhanh DC tối đa": "24 kW"
-  },
-  "key_features": [...]
-}
+# Hoặc kích hoạt từng tác vụ độc lập:
+python src/data_pipeline/task1_vinfast_auto_crawl_data.py --relational
+python src/data_pipeline/task1_vinfast_auto_crawl_data.py --faqs
+python src/data_pipeline/task1_vinfast_auto_crawl_data.py --policies
+python src/data_pipeline/task1_vinfast_auto_crawl_data.py --news
+python src/data_pipeline/task1_vinfast_auto_crawl_data.py --specs
 ```
 
 ---
 
-## 💡 Lưu ý kỹ thuật & Tương thích ngược
+## 📝 Lịch sử cập nhật (Changelog)
 
-1. **Khả năng vượt chặn Cloudflare**:
-   - `crawler_utils.py` cung cấp cơ chế tải hai tầng: thử nghiệm kết nối tiêu chuẩn qua `urllib.request`; nếu bị chặn HTTP 403 do TLS JA3 Fingerprint của Cloudflare, hệ thống sẽ tự động fallback sang `curl.exe` tích hợp sẵn trên hệ điều hành, đảm bảo tỷ lệ tải thành công 100%.
-2. **Mã hóa ký tự tiếng Việt**:
-   - Các file CSV sử dụng bảng mã `utf-8-sig` (UTF-8 kèm BOM) để hiển thị chính xác trên Microsoft Excel.
-   - Các file JSON sử dụng `utf-8` chuẩn với cờ `ensure_ascii=False` để người dùng và các mô hình LLM đọc tiếng Việt tự nhiên không bị escape thành `\uXXXX`.
-3. **Giới hạn số dòng file**:
-   - Toàn bộ các file `.py` trong dự án đều có số dòng từ 160 đến tối đa 502 dòng, đảm bảo tiêu chuẩn code sạch và dưới 600 dòng.
-4. **Tương thích ngược 100%**:
-   - File [task1_vinfast_auto_crawl_data.py](file:///c:/Users/Vxtor/Documents/workspace/P-097/src/data_pipeline/task1_vinfast_auto_crawl_data.py) vẫn export đầy đủ tất cả các hàm cũ (`fetch_rolling_data`, `export_car_editions_pricing`, ...) để bất kỳ mã nguồn hiện có nào gọi trực tiếp đều hoạt động bình thường không cần sửa đổi.
+|   Phiên bản   |       Thời gian cập nhật       | Nội dung cải tiến chính                                                                                                                                                                                                                                                                                                                                         |
+| :--------------: | :--------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **v1.2.0** | **2026-09-28 23:30 (GMT+7)** | - Bổ sung cơ chế**random polite delay (1.0s – 2.2s)** giữa các HTTP request để chống bot detection.- Chuẩn hóa **RAG Metadata Schema** cho 100% file JSON tầng landing (doc_id, doc_type, hash, char/word count, related_models).- Thêm trường theo dõi ngày giờ cập nhật trong README để kiểm soát độ mới (data freshness). |
+| **v1.1.0** |      2026-09-28 23:05 (GMT+7)      | - Mở rộng thu thập phi cấu trúc: FAQs (400 câu), Chính sách, Pháp lý, Tin tức & Specs 14 dòng ô tô.- Tái cấu trúc module hóa dưới thư mục `crawlers/` (mỗi file < 600 dòng).                                                                                                                                                              |
+| **v1.0.0** |      2026-09-28 15:40 (GMT+7)      | - Khởi tạo pipeline Task 1: Crawl dữ liệu bảng giá quan hệ và dự toán lăn bánh ra 6 file CSV.                                                                                                                                                                                                                                                           |
