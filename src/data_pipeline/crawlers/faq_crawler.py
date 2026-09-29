@@ -18,7 +18,6 @@ from src.data_pipeline.crawlers.crawler_utils import (
     clean_html,
     fetch_html,
     get_current_iso_timestamp,
-    random_delay,
     save_json,
 )
 
@@ -55,7 +54,6 @@ def parse_faqs_from_html(html: str) -> list[dict[str, Any]]:
 
     results: list[dict[str, Any]] = []
     item_idx = 1
-    timestamp = get_current_iso_timestamp()
 
     # Legacy ICE models cần loại bỏ theo yêu cầu:
     # "chỉ các dòng, loại, option xe đã crawl được hoặc các thông tin chung"

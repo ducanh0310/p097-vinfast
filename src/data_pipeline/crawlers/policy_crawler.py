@@ -22,7 +22,6 @@ from src.data_pipeline.crawlers.crawler_utils import (
     build_rag_metadata,
     clean_html,
     fetch_html,
-    get_current_iso_timestamp,
     random_delay,
     save_json,
 )

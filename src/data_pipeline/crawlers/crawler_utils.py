@@ -18,7 +18,7 @@ import sys
 import time
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from html import unescape
 from pathlib import Path
 from typing import Any
@@ -90,7 +90,7 @@ DEFAULT_USER_AGENT = (
 
 def get_current_iso_timestamp() -> str:
     """Trả về thời gian hiện tại định dạng ISO 8601 UTC."""
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def random_delay(

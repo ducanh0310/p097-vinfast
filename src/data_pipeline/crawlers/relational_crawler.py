@@ -132,7 +132,6 @@ def export_car_color_options(data: dict[str, Any]) -> int:
     """Lưu bảng tùy chọn màu sắc xe, phụ phí màu, và giá xe theo từng màu."""
     cars = data.get("vehicles", {}).get("cars", {})
     models_list = cars.get("models", [])
-    model_names = {m["id"]: m["name"] for m in models_list}
     colors_cfg = data.get("objects", {}).get("colors", {})
     costs = data.get("objects", {}).get("costs", [])
 
@@ -180,7 +179,6 @@ def export_car_color_options(data: dict[str, Any]) -> int:
             if isinstance(ed_cfg, dict) and ed_cfg.get("enable"):
                 for group in ed_cfg.get("colors", []):
                     extra = group.get("priceValue", 0) or 0
-                    label_grp = group.get("label", {}).get("default", "Màu cơ bản")
                     c_type = "Màu nâng cao" if extra > 0 else "Màu cơ bản"
                     for ext in group.get("extcode", []):
                         extra_price_map[ext] = extra
@@ -194,7 +192,7 @@ def export_car_color_options(data: dict[str, Any]) -> int:
                 c_label = c_data.get("label", c_code)
                 extra_price = extra_price_map.get(c_code, 0)
                 c_type = color_type_map.get(c_code, "Màu cơ bản" if extra_price == 0 else "Màu nâng cao")
-                
+
                 # Giá có sẵn trong c_data hoặc tính theo base_price + extra_price
                 color_price_dict = c_data.get("price") or {}
                 if isinstance(color_price_dict, dict) and color_price_dict.get("value"):
@@ -313,7 +311,6 @@ def export_promotions(data: dict[str, Any]) -> int:
 
 def export_bike_pricing(data: dict[str, Any]) -> int:
     """Lưu bảng giá và chi phí đăng ký xe máy điện VinFast."""
-    bikes = data.get("vehicles", {}).get("bikes", {})
     costs = data.get("objects", {}).get("costs", [])
     file_path = RELATIONAL_DIR / "vinfast_bike_pricing.csv"
 
