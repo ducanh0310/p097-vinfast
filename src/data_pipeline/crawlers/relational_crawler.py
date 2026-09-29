@@ -12,9 +12,12 @@ Sau đó lưu trữ có cấu trúc thành các file CSV trong:
 from __future__ import annotations
 
 import csv
+import http.cookiejar
 import json
 import os
 import sys
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -29,6 +32,7 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR = Path(os.getenv("DATA_DIR", PROJECT_ROOT / "data"))
 RELATIONAL_DIR = DATA_DIR / "landing" / "relational"
+SNAPSHOT_PATH = RELATIONAL_DIR / "vinfast_rolling_raw_snapshot.json"
 
 
 API_ENDPOINT = (
@@ -38,27 +42,93 @@ API_ENDPOINT = (
 PAGE_URL = "https://shop.vinfastauto.com/vn_vi/chi-phi-lan-banh"
 
 
-def fetch_rolling_data() -> dict[str, Any]:
-    """Gọi API RollingUpCost-GetInfoRolling của VinFast để lấy toàn bộ dữ liệu cấu hình và giá."""
-    print(f"🌐 Đang kết nối tới endpoint VinFast: {API_ENDPOINT} ...")
-    req = urllib.request.Request(
-        API_ENDPOINT,
-        headers={
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            ),
-            "Referer": PAGE_URL,
-            "X-Requested-With": "XMLHttpRequest",
-            "Accept": "application/json, text/javascript, */*; q=0.01",
-        },
-    )
+def fetch_rolling_data(
+    max_retries: int = 3,
+    timeout: float = 25.0,
+    session_handshake: bool = True,
+    use_cache_fallback: bool = True,
+    cache_path: Path | None = None,
+) -> dict[str, Any]:
+    """Gọi API RollingUpCost-GetInfoRolling của VinFast để lấy toàn bộ dữ liệu cấu hình và giá.
 
-    with urllib.request.urlopen(req, timeout=20) as resp:
-        content = resp.read().decode("utf-8")
-        data = json.loads(content)
-        print(f"✅ Tải dữ liệu thành công! Dung lượng phản hồi: {len(content):,} bytes.")
-        return data
+    Cải tiến chống Potential API Failure (PR Review feedback):
+    1. Session handshake: Sử dụng CookieJar để nhận và duy trì session/CSRF cookies từ PAGE_URL.
+    2. Retry & Exponential backoff: Tự động thử lại khi gặp sự cố mạng tạm thời hoặc rate-limit.
+    3. Local snapshot fallback: Khi API bị lỗi hoặc chặn kết nối, tự động fallback đọc từ file
+       snapshot cục bộ gần nhất để pipeline dữ liệu không bị gãy đột ngột.
+    """
+    snapshot_file = cache_path or SNAPSHOT_PATH
+    cookie_jar = http.cookiejar.CookieJar()
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookie_jar))
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "Referer": PAGE_URL,
+        "X-Requested-With": "XMLHttpRequest",
+        "Accept": "application/json, text/javascript, */*; q=0.01",
+        "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
+    }
+
+    # 1. Bước bắt tay phiên (Session handshake) để nhận cookie hợp lệ
+    if session_handshake:
+        try:
+            handshake_req = urllib.request.Request(
+                PAGE_URL,
+                headers={"User-Agent": headers["User-Agent"]},
+            )
+            with opener.open(handshake_req, timeout=timeout) as _:
+                pass
+        except Exception as e:
+            print(f"⚠️  Session handshake cảnh báo (vẫn tiếp tục gọi API): {e}")
+
+    # 2. Vòng lặp gọi API kèm Retry & Exponential Backoff
+    last_error: Exception | None = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"🌐 Đang kết nối tới endpoint VinFast (lần {attempt}/{max_retries}): {API_ENDPOINT} ...")
+            req = urllib.request.Request(API_ENDPOINT, headers=headers)
+            with opener.open(req, timeout=timeout) as resp:
+                content = resp.read().decode("utf-8")
+                data = json.loads(content)
+
+                if not isinstance(data, dict) or ("vehicles" not in data and "objects" not in data):
+                    msg = "Phản hồi API không chứa cấu trúc 'vehicles' hoặc 'objects' hợp lệ."
+                    raise ValueError(msg)
+
+                print(f"✅ Tải dữ liệu thành công! Dung lượng phản hồi: {len(content):,} bytes.")
+
+                # Lưu snapshot dự phòng cho các lần chạy sau
+                try:
+                    snapshot_file.parent.mkdir(parents=True, exist_ok=True)
+                    with open(snapshot_file, "w", encoding="utf-8") as f:
+                        json.dump(data, f, ensure_ascii=False, indent=2)
+                except Exception as save_err:
+                    print(f"⚠️  Không thể lưu snapshot dự phòng: {save_err}")
+
+                return data
+
+        except Exception as err:
+            last_error = err
+            print(f"⚠️  Lần thử {attempt}/{max_retries} thất bại: {err}")
+            if attempt < max_retries:
+                backoff = 2 ** (attempt - 1)
+                time.sleep(backoff)
+
+    # 3. Fallback sang snapshot cục bộ nếu có
+    if use_cache_fallback and snapshot_file.exists():
+        print(f"\n⚠️  [FALLBACK] API VinFast không thể truy cập sau {max_retries} lần thử: {last_error}")
+        print(f"📂 Đang tự động nạp dữ liệu từ snapshot cục bộ dự phòng: {snapshot_file.name} ...")
+        with open(snapshot_file, encoding="utf-8") as f:
+            data = json.load(f)
+            print(f"✅ Nạp thành công dữ liệu từ snapshot ({len(data)} khóa cấp cao).")
+            return data
+
+    raise RuntimeError(
+        f"Không thể tải dữ liệu từ API VinFast sau {max_retries} lần thử và không có snapshot dự phòng: {last_error}"
+    )
 
 
 def export_car_editions_pricing(data: dict[str, Any]) -> int:
