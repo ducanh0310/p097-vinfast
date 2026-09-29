@@ -1,7 +1,7 @@
 # VinFast Auto Data Pipeline
 
 > **🕒 Lần cập nhật script gần nhất (Last Updated):** `2026-09-28 23:30 (GMT+7)`
-> **📦 Phiên bản (Version):** `v1.2.0`
+> **📦 Phiên bản (Version):** `v1.3.0`
 > **⏱️ Chu kỳ kiểm tra khuyến nghị:** 7 – 14 ngày (hoặc kích hoạt chạy lại khi VinFast công bố bảng giá/chính sách/dòng xe mới để tránh outdate dữ liệu)
 
 ---
@@ -100,29 +100,47 @@ Mã nguồn tuân thủ nghiêm ngặt nguyên tắc Clean Architecture và **m�
 
 ```text
 src/data_pipeline/
-├── task1_vinfast_auto_crawl_data.py   # Entrypoint chính (CLI + Orchestrator) (204 dòng)
+├── task1_vinfast_auto_crawl_data.py   # Entrypoint chính (CLI + Orchestrator) (~245 dòng)
 ├── README.md                          # Tài liệu kỹ thuật chi tiết (file này)
+├── sources.csv                        # Danh sách nguồn tham chiếu bổ sung (Techcombank, Bảo Việt, XeHay...)
 └── crawlers/                          # Gói các module crawler chuyên biệt
-    ├── __init__.py                    # Package init (3 dòng)
-    ├── crawler_utils.py               # Tiện ích HTTP, delay, hash & RAG metadata (228 dòng)
-    ├── relational_crawler.py          # Bóc tách bảng giá & dự toán lăn bánh CSV (502 dòng)
+    ├── __init__.py                    # Package init & re-export (22 dòng)
+    ├── crawler_utils.py               # Tiện ích HTTP, delay, hash & RAG metadata (242 dòng)
+    ├── relational_crawler.py          # Bóc tách bảng giá & dự toán lăn bánh CSV (VinFast duy nhất) (502 dòng)
     ├── faq_crawler.py                 # Bóc tách 400 FAQ & phân cấp danh mục (185 dòng)
-    ├── policy_crawler.py              # Bóc tách chính sách dịch vụ & pháp lý (282 dòng)
-    ├── news_crawler.py                # Bóc tách tin tức & thông cáo sản phẩm (241 dòng)
-    └── specs_crawler.py               # Bóc tách thông số kỹ thuật 14 dòng xe (293 dòng)
+    ├── policy_crawler.py              # Bóc tách chính sách dịch vụ & pháp lý VinFast (282 dòng)
+    ├── news_crawler.py                # Bóc tách tin tức & thông cáo sản phẩm VinFast (241 dòng)
+    ├── specs_crawler.py               # Bóc tách thông số kỹ thuật 14 dòng xe VinFast (293 dòng)
+    ├── vgreen_crawler.py              # Crawl đa cấp V-GREEN (trạm sạc, đổi pin, chính sách, tin tức) (~340 dòng)
+    └── external_sources_crawler.py    # Crawl các bài viết từ source.csv / sources.csv (~260 dòng)
 ```
 
 ---
 
 ## 📂 Thư mục dữ liệu đầu ra (`data/landing/`)
 
+> [!IMPORTANT]
+> **Quy tắc phân vùng dữ liệu nghiêm ngặt:**
+>
+> - `data/landing/relational/` **CHỈ** được phép lưu trữ dữ liệu bảng giá & chi phí lăn bánh chính thức từ **VinFast Auto**.
+> - Toàn bộ dữ liệu mở rộng từ **V-GREEN** và các nguồn ngoài lề (**source.csv / sources.csv**) **CHỈ** được phép phân bổ vào `data/landing/policies/` hoặc `data/landing/news/`.
+
 ```text
 data/landing/
-├── relational/                        # 6 CSV: bảng giá, màu xe, biểu phí, khuyến mãi, lăn bánh
+├── relational/                        # 6 CSV: bảng giá, màu xe, biểu phí, khuyến mãi, lăn bánh (CHỈ VINFAST AUTO)
 ├── faqs/                              # 3 JSON: vinfast_faqs.json (400 câu), phân cấp & tổng quan
-├── policies/                          # 10 JSON: bảo hành, pin, cứu hộ, bảo dưỡng, hợp đồng
-├── legal/                             # 3 JSON: điều khoản pháp lý & chính sách quyền riêng tư
-├── news/                              # 26 JSON: 24 bài viết chi tiết + file tổng hợp + báo cáo
+├── policies/                          # Chính sách bảo hành, pin, trạm sạc, hợp đồng, tài chính & bảo hiểm:
+│   ├── vgreen/                        # 36 JSON chi tiết chính sách, quy chế, đối tác, tài liệu trạm sạc V-GREEN
+│   ├── external/                      # 7 JSON chính sách lãi suất vay (Techcombank) & bảo hiểm (Bảo Việt)
+│   ├── vgreen_policies_all.json       # Tổng hợp toàn bộ chính sách V-GREEN
+│   ├── external_sources_policies.json # Tổng hợp toàn bộ chính sách từ source.csv
+│   └── vinfast_policies_all.json      # Tổng hợp toàn bộ chính sách VinFast
+├── legal/                             # 3 JSON: điều khoản pháp lý & chính sách quyền riêng tư VinFast
+├── news/                              # Tin tức, thông cáo báo chí, bài viết đánh giá thị trường:
+│   ├── articles/                      # Hơn 58 bài viết chi tiết (VinFast + V-GREEN + XeHay)
+│   ├── vgreen_news_articles.json      # Tổng hợp bài viết tin tức & hợp tác V-GREEN
+│   ├── external_sources_news.json     # Tổng hợp bài viết tin tức từ source.csv
+│   └── vinfast_news_articles.json     # Tổng hợp tin tức VinFast Auto
 └── specs/                             # 16 JSON: 14 dòng xe (VF 2 -> VF Wild, Limo Green...) + tổng hợp
 ```
 
@@ -133,7 +151,7 @@ data/landing/
 Từ thư mục gốc dự án:
 
 ```powershell
-# Chạy toàn bộ pipeline (Relational CSVs + FAQs + Policies + Legal + News + Specs):
+# Chạy toàn bộ pipeline (Relational CSVs + FAQs + Policies + News + Specs + V-Green + Sources CSV):
 python src/data_pipeline/task1_vinfast_auto_crawl_data.py
 
 # Hoặc kích hoạt từng tác vụ độc lập:
@@ -142,14 +160,17 @@ python src/data_pipeline/task1_vinfast_auto_crawl_data.py --faqs
 python src/data_pipeline/task1_vinfast_auto_crawl_data.py --policies
 python src/data_pipeline/task1_vinfast_auto_crawl_data.py --news
 python src/data_pipeline/task1_vinfast_auto_crawl_data.py --specs
+python src/data_pipeline/task1_vinfast_auto_crawl_data.py --vgreen
+python src/data_pipeline/task1_vinfast_auto_crawl_data.py --sources
 ```
 
 ---
 
 ## 📝 Lịch sử cập nhật (Changelog)
 
-|   Phiên bản   |       Thời gian cập nhật       | Nội dung cải tiến chính                                                                                                                                                                                                                                                                                                                                         |
-| :--------------: | :--------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **v1.2.0** | **2026-09-28 23:30 (GMT+7)** | - Bổ sung cơ chế**random polite delay (1.0s – 2.2s)** giữa các HTTP request để chống bot detection.- Chuẩn hóa **RAG Metadata Schema** cho 100% file JSON tầng landing (doc_id, doc_type, hash, char/word count, related_models).- Thêm trường theo dõi ngày giờ cập nhật trong README để kiểm soát độ mới (data freshness). |
-| **v1.1.0** |      2026-09-28 23:05 (GMT+7)      | - Mở rộng thu thập phi cấu trúc: FAQs (400 câu), Chính sách, Pháp lý, Tin tức & Specs 14 dòng ô tô.- Tái cấu trúc module hóa dưới thư mục `crawlers/` (mỗi file < 600 dòng).                                                                                                                                                              |
-| **v1.0.0** |      2026-09-28 15:40 (GMT+7)      | - Khởi tạo pipeline Task 1: Crawl dữ liệu bảng giá quan hệ và dự toán lăn bánh ra 6 file CSV.                                                                                                                                                                                                                                                           |
+|   Phiên bản   |        Thời gian cập nhật        | Nội dung cải tiến chính                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| :--------------: | :---------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **v1.3.0** | **2026-09-29 11:55 (GMT+7)** | - Tích hợp**V-GREEN Multi-level Crawler** (`vgreen_crawler.py`): bóc tách đa cấp toàn diện dữ liệu trạm sạc, tủ đổi pin, quy chế, đối tác, tài liệu vận hành và tin tức từ https://vgreen.net/vi.- Tích hợp **External Sources Crawler** (`external_sources_crawler.py`): thu thập các liên kết độc lập từ `source.csv` / `sources.csv` (lãi suất vay ngân hàng Techcombank, bảo hiểm xe Bảo Việt, đánh giá XeHay).- Thiết lập cơ chế cách ly dữ liệu: bảng `relational` chỉ chứa dữ liệu VinFast Auto; toàn bộ dữ liệu V-GREEN và bên ngoài được phân loại độc quyền vào `policies` hoặc `news`. |
+| **v1.2.0** |      2026-09-28 23:30 (GMT+7)      | - Bổ sung cơ chế**random polite delay (1.0s – 2.2s)** giữa các HTTP request để chống bot detection.- Chuẩn hóa **RAG Metadata Schema** cho 100% file JSON tầng landing (doc_id, doc_type, hash, char/word count, related_models).- Thêm trường theo dõi ngày giờ cập nhật trong README để kiểm soát độ mới (data freshness).                                                                                                                                                                                                                                                                                                                                     |
+| **v1.1.0** |      2026-09-28 23:05 (GMT+7)      | - Mở rộng thu thập phi cấu trúc: FAQs (400 câu), Chính sách, Pháp lý, Tin tức & Specs 14 dòng ô tô.- Tái cấu trúc module hóa dưới thư mục`crawlers/` (mỗi file < 600 dòng).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **v1.0.0** |      2026-09-28 15:40 (GMT+7)      | - Khởi tạo pipeline Task 1: Crawl dữ liệu bảng giá quan hệ và dự toán lăn bánh ra 6 file CSV.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |

@@ -46,6 +46,7 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
         pass
 
 # Import các crawler chuyên biệt
+from src.data_pipeline.crawlers.external_sources_crawler import run_external_sources_crawl
 from src.data_pipeline.crawlers.faq_crawler import run_faq_crawl
 from src.data_pipeline.crawlers.news_crawler import run_news_crawl
 from src.data_pipeline.crawlers.policy_crawler import run_policy_crawl
@@ -60,6 +61,7 @@ from src.data_pipeline.crawlers.relational_crawler import (
     run_relational_crawl,
 )
 from src.data_pipeline.crawlers.specs_crawler import run_specs_crawl
+from src.data_pipeline.crawlers.vgreen_crawler import run_vgreen_crawl
 
 # Re-export các hàm và biến để tương thích ngược 100% với mã nguồn cũ
 __all__ = [
@@ -75,6 +77,8 @@ __all__ = [
     "run_policy_crawl",
     "run_news_crawl",
     "run_specs_crawl",
+    "run_vgreen_crawl",
+    "run_external_sources_crawl",
     "main",
 ]
 
@@ -82,17 +86,17 @@ __all__ = [
 def parse_arguments() -> argparse.Namespace:
     """Xử lý tham số dòng lệnh tùy chọn."""
     parser = argparse.ArgumentParser(
-        description="Pipeline thu thập toàn diện dữ liệu VinFast Auto (Task 1)"
+        description="Pipeline thu thập toàn diện dữ liệu VinFast Auto, V-GREEN & Nguồn tham chiếu (Task 1)"
     )
     parser.add_argument(
         "--all",
         action="store_true",
-        help="Chạy toàn bộ pipeline (Relational CSVs + FAQs + Policies + Legal + News + Specs)",
+        help="Chạy toàn bộ pipeline (Relational CSVs + FAQs + Policies + Legal + News + Specs + V-Green + Sources CSV)",
     )
     parser.add_argument(
         "--relational",
         action="store_true",
-        help="Chỉ crawl dữ liệu bảng giá quan hệ và dự toán lăn bánh (CSV)",
+        help="Chỉ crawl dữ liệu bảng giá quan hệ và dự toán lăn bánh (CSV - chỉ dành cho VinFast Auto)",
     )
     parser.add_argument(
         "--faqs",
@@ -114,6 +118,16 @@ def parse_arguments() -> argparse.Namespace:
         action="store_true",
         help="Chỉ crawl Thông số kỹ thuật chi tiết các dòng xe (JSON)",
     )
+    parser.add_argument(
+        "--vgreen",
+        action="store_true",
+        help="Chỉ crawl dữ liệu đa cấp V-GREEN (vgreen.net - chỉ lưu vào policies và news)",
+    )
+    parser.add_argument(
+        "--sources",
+        action="store_true",
+        help="Chỉ crawl dữ liệu từ file source.csv / sources.csv (chỉ lưu vào policies và news)",
+    )
     return parser.parse_args()
 
 
@@ -128,31 +142,37 @@ def main() -> None:
         args.policies,
         args.news,
         args.specs,
+        args.vgreen,
+        args.sources,
     ])
 
     start_time = time.time()
     print("=" * 70)
-    print("🌟 VINFAST AUTO COMPREHENSIVE DATA PIPELINE (TASK 1)")
-    print("   Trang chủ: https://vinfastauto.com/vn_vi")
-    print("   Trang dự toán: https://shop.vinfastauto.com/vn_vi/chi-phi-lan-banh")
+    print("🌟 VINFAST AUTO & ECOSYSTEM COMPREHENSIVE DATA PIPELINE (TASK 1)")
+    print("   Trang chủ VinFast: https://vinfastauto.com/vn_vi")
+    print("   Trang dự toán:     https://shop.vinfastauto.com/vn_vi/chi-phi-lan-banh")
+    print("   Trang V-Green:     https://vgreen.net/vi")
+    print("   Nguồn tham chiếu:  source.csv / sources.csv")
+    print("   Lưu ý kiến trúc:   Bảng relational CHỈ lưu trữ dữ liệu VinFast Auto.")
+    print("                      Dữ liệu V-Green & ngoài lề chỉ lưu vào policies/news.")
     print("=" * 70)
 
     results_summary: dict[str, str] = {}
 
-    # 1. Relational Data (CSV)
+    # 1. Relational Data (CSV) - DUY NHẤT DÀNH CHO VINFAST AUTO
     if run_all or args.relational:
-        print("\n[1/5] 📊 CRAWL DỮ LIỆU GIÁ BÁN & DỰ TOÁN LĂN BÁNH (RELATIONAL CSV)...")
+        print("\n[1/7] 📊 CRAWL DỮ LIỆU GIÁ BÁN & DỰ TOÁN LĂN BÁNH VINFAST AUTO (RELATIONAL CSV)...")
         try:
             rel_res = run_relational_crawl()
             total_rows = sum(rel_res.values())
-            results_summary["Relational CSVs"] = f"✅ {total_rows} bản ghi (6 files CSV)"
+            results_summary["Relational CSVs (VinFast)"] = f"✅ {total_rows} bản ghi (6 files CSV)"
         except Exception as e:
-            results_summary["Relational CSVs"] = f"❌ Lỗi: {e}"
+            results_summary["Relational CSVs (VinFast)"] = f"❌ Lỗi: {e}"
             print(f"❌ Lỗi crawl relational: {e}")
 
     # 2. FAQs (JSON)
     if run_all or args.faqs:
-        print("\n[2/5] ❓ CRAWL CÂU HỎI THƯỜNG GẶP (FAQS JSON)...")
+        print("\n[2/7] ❓ CRAWL CÂU HỎI THƯỜNG GẶP (FAQS JSON)...")
         try:
             faq_res = run_faq_crawl()
             results_summary["FAQs JSON"] = f"✅ {faq_res.get('count', 0)} câu hỏi"
@@ -162,7 +182,7 @@ def main() -> None:
 
     # 3. Policies & Legal (JSON)
     if run_all or args.policies:
-        print("\n[3/5] 📜 CRAWL CHÍNH SÁCH BẢO HÀNH, PIN, HẬU MÃI & PHÁP LÝ (JSON)...")
+        print("\n[3/7] 📜 CRAWL CHÍNH SÁCH BẢO HÀNH, PIN, HẬU MÃI & PHÁP LÝ VINFAST (JSON)...")
         try:
             pol_res = run_policy_crawl()
             total_pols = pol_res.get("policies_count", 0) + pol_res.get("legal_count", 0)
@@ -173,7 +193,7 @@ def main() -> None:
 
     # 4. News (JSON)
     if run_all or args.news:
-        print("\n[4/5] 📰 CRAWL TIN TỨC & THÔNG CÁO SẢN PHẨM MỚI (JSON)...")
+        print("\n[4/7] 📰 CRAWL TIN TỨC & THÔNG CÁO SẢN PHẨM MỚI VINFAST (JSON)...")
         try:
             news_res = run_news_crawl()
             results_summary["News JSON"] = f"✅ {news_res.get('count', 0)} bài viết"
@@ -183,7 +203,7 @@ def main() -> None:
 
     # 5. Vehicle Specifications (JSON)
     if run_all or args.specs:
-        print("\n[5/5] 🚗 CRAWL THÔNG SỐ KỸ THUẬT CHI TIẾT CÁC DÒNG XE (SPECS JSON)...")
+        print("\n[5/7] 🚗 CRAWL THÔNG SỐ KỸ THUẬT CHI TIẾT CÁC DÒNG XE VINFAST (SPECS JSON)...")
         try:
             specs_res = run_specs_crawl()
             results_summary["Specs JSON"] = f"✅ {specs_res.get('models_count', 0)} dòng xe"
@@ -191,12 +211,38 @@ def main() -> None:
             results_summary["Specs JSON"] = f"❌ Lỗi: {e}"
             print(f"❌ Lỗi crawl Specs: {e}")
 
+    # 6. V-Green Multi-level Crawler (JSON -> policies / news)
+    if run_all or args.vgreen or args.policies or args.news:
+        if run_all or args.vgreen:
+            print("\n[6/7] ⚡ CRAWL ĐA CẤP HỆ SINH THÁI TRẠM SẠC & ĐỔI PIN V-GREEN (vgreen.net)...")
+            try:
+                vg_res = run_vgreen_crawl()
+                p_cnt = vg_res.get("total_policies_collected", 0)
+                n_cnt = vg_res.get("total_news_collected", 0)
+                results_summary["V-GREEN (Policies & News)"] = f"✅ {p_cnt} chính sách, {n_cnt} tin tức"
+            except Exception as e:
+                results_summary["V-GREEN (Policies & News)"] = f"❌ Lỗi: {e}"
+                print(f"❌ Lỗi crawl V-GREEN: {e}")
+
+    # 7. External Sources Crawler (JSON -> policies / news)
+    if run_all or args.sources or args.policies or args.news:
+        if run_all or args.sources:
+            print("\n[7/7] 🌐 CRAWL BÀI VIẾT THAM CHIẾU TỪ FILE NGUỒN (source.csv / sources.csv)...")
+            try:
+                ext_res = run_external_sources_crawl()
+                p_cnt = ext_res.get("total_policies_collected", 0)
+                n_cnt = ext_res.get("total_news_collected", 0)
+                results_summary["External Sources (CSV)"] = f"✅ {p_cnt} chính sách, {n_cnt} tin tức"
+            except Exception as e:
+                results_summary["External Sources (CSV)"] = f"❌ Lỗi: {e}"
+                print(f"❌ Lỗi crawl External Sources: {e}")
+
     duration = time.time() - start_time
     print("\n" + "=" * 70)
     print(f"🏁 HOÀN TẤT PIPELINE THU THẬP DỮ LIỆU TRONG {duration:.2f} GIÂY!")
     print("📊 BÁO CÁO KẾT QUẢ:")
     for component, status in results_summary.items():
-        print(f"   - {component:<25}: {status}")
+        print(f"   - {component:<28}: {status}")
     print("=" * 70)
 
 

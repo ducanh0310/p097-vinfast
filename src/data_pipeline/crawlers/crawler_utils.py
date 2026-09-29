@@ -12,9 +12,11 @@ import json
 import os
 import random
 import re
+import socket
 import subprocess
 import sys
 import time
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from html import unescape
@@ -115,6 +117,7 @@ def build_rag_metadata(
     category: str,
     subcategory: str = "",
     source_url: str = "",
+    domain: str = "",
     applies_to: str = "Toàn bộ",
     related_models: list[str] | None = None,
     raw_content: str = "",
@@ -129,11 +132,18 @@ def build_rag_metadata(
     clean_text = raw_content.strip() if raw_content else ""
     words = clean_text.split()
 
+    if not domain:
+        if source_url:
+            parsed = urllib.parse.urlparse(source_url).netloc
+            domain = parsed.replace("www.", "") if parsed else "vinfastauto.com"
+        else:
+            domain = "vinfastauto.com"
+
     meta: dict[str, Any] = {
         "doc_id": doc_id,
         "doc_type": doc_type,
         "title": title,
-        "domain": "vinfastauto.com",
+        "domain": domain,
         "source_url": source_url,
         "language": "vi",
         "category": category,
@@ -159,6 +169,7 @@ def fetch_html(url: str, timeout: int = 15) -> str:
     Ưu tiên sử dụng urllib, tự động fallback sang curl.exe nếu gặp lỗi chặn
     bởi Cloudflare (403 Forbidden hoặc TLS fingerprint).
     """
+    socket.setdefaulttimeout(timeout)
     req = urllib.request.Request(
         url,
         headers={
@@ -175,6 +186,10 @@ def fetch_html(url: str, timeout: int = 15) -> str:
         cmd = [
             "curl.exe",
             "-sL",
+            "--http1.1",
+            "--compressed",
+            "-m",
+            str(timeout + 5),
             url,
             "-H",
             f"User-Agent: {DEFAULT_USER_AGENT}",
@@ -192,11 +207,19 @@ def fetch_html(url: str, timeout: int = 15) -> str:
         return res.stdout or ""
 
 
-def clean_html(html_content: str) -> str:
+def clean_html(html_content: str, strip_nav: bool = False) -> str:
     """Làm sạch HTML thành văn bản thuần túy, giữ ngắt dòng hợp lý."""
     if not html_content:
         return ""
-    text = re.sub(r"<script.*?</script>", "", html_content, flags=re.DOTALL | re.I)
+    text = html_content
+    if strip_nav:
+        text = re.sub(
+            r"<(?:header|footer|nav|aside)[^>]*>.*?</(?:header|footer|nav|aside)>",
+            "",
+            text,
+            flags=re.DOTALL | re.I,
+        )
+    text = re.sub(r"<script.*?</script>", "", text, flags=re.DOTALL | re.I)
     text = re.sub(r"<style.*?</style>", "", text, flags=re.DOTALL | re.I)
     text = re.sub(r"<br\s*/?>", "\n", text, flags=re.I)
     text = re.sub(r"</p>", "\n\n", text, flags=re.I)
