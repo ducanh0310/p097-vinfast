@@ -23,7 +23,21 @@ try:
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
-    pass
+    # Fallback parser if python-dotenv is not installed in the active python runtime
+    env_file = Path(".env")
+    if env_file.exists():
+        with open(env_file, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                k, v = k.strip(), v.strip()
+                if (v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'")):
+                    v = v[1:-1]
+                if k not in os.environ:
+                    os.environ[k] = v
+
 
 SERVER_URL = os.environ.get("AI_LOG_SERVER", "")
 API_KEY = os.environ.get("AI_LOG_API_KEY", "")
@@ -38,14 +52,31 @@ BATCH_LIMIT = 500
 
 
 def _archive(pending: Path) -> None:
-    """Append pending file to today's archive. Never overwrites existing data."""
+    """Append pending file to archive split by prompt date. Never overwrites existing data."""
     if not pending.exists() or pending.stat().st_size == 0:
         return
     ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
     today = datetime.now(UTC).strftime("%Y-%m-%d")
-    archive_file = ARCHIVE_DIR / f"{today}.jsonl"
-    with open(pending, "rb") as src, open(archive_file, "ab") as dst:
-        shutil.copyfileobj(src, dst)
+
+    lines_by_date = {}
+    with open(pending, "r", encoding="utf-8") as src:
+        for line in src:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            try:
+                date_key = json.loads(stripped).get("ts", "")[:10]
+            except Exception:
+                date_key = today
+            if not date_key or len(date_key) != 10:
+                date_key = today
+            lines_by_date.setdefault(date_key, []).append(line)
+
+    for date_key, lines in lines_by_date.items():
+        archive_file = ARCHIVE_DIR / f"{date_key}.jsonl"
+        with open(archive_file, "a", encoding="utf-8") as dst:
+            dst.writelines(lines)
+
 
 
 def _restore_pending(pending: Path) -> None:
