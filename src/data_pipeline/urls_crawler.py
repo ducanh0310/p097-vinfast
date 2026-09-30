@@ -117,34 +117,9 @@ SEED_ENTRIES: list[dict[str, str]] = [
         "url": "https://vinfastauto.com/vn_vi/vinfast-ecvan",
         "category": "thong_so_ky_thuat",
     },
-    {
-        "title": "Thông số kỹ thuật xe máy điện VinFast Evo200 & Evo200 Lite",
-        "url": "https://vinfastauto.com/vn_vi/xe-may-dien-vinfast-evo-200",
-        "category": "thong_so_ky_thuat",
-    },
-    {
-        "title": "Thông số kỹ thuật xe máy điện VinFast Feliz S",
-        "url": "https://vinfastauto.com/vn_vi/xe-may-dien-vinfast-feliz-s",
-        "category": "thong_so_ky_thuat",
-    },
-    {
-        "title": "Thông số kỹ thuật xe máy điện VinFast Klara S",
-        "url": "https://vinfastauto.com/vn_vi/xe-may-dien-vinfast-klara-s-2022",
-        "category": "thong_so_ky_thuat",
-    },
-    {
-        "title": "Thông số kỹ thuật xe máy điện VinFast Vento S",
-        "url": "https://vinfastauto.com/vn_vi/xe-may-dien-vinfast-vento-s",
-        "category": "thong_so_ky_thuat",
-    },
-    {
-        "title": "Thông số kỹ thuật xe máy điện VinFast Theon S",
-        "url": "https://vinfastauto.com/vn_vi/xe-may-dien-vinfast-theon-s",
-        "category": "thong_so_ky_thuat",
-    },
 
     # --------------------------------------------------------------------------
-    # 2. CHINH_SACH_UU_DAI (TRANG CHỦ ƯU ĐÃI VINFAST & CHƯƠNG TRÌNH KHUYẾN MÃI)
+    # 2. CHINH_SACH_UU_DAI (TRANG CHỦ ƯU ĐÃI Ô TÔ ĐIỆN VINFAST)
     # --------------------------------------------------------------------------
     {
         "title": "Tổng hợp chương trình ưu đãi và khuyến mại VinFast",
@@ -176,22 +151,12 @@ SEED_ENTRIES: list[dict[str, str]] = [
         "url": "https://vinfastauto.com/vn_vi/chuong-trinh-uu-dai-tang-bao-hiem-2-nam-khi-mua-xe-o-to-vinfast-vf-3-vf-5-va-herio-green",
         "category": "chinh_sach_uu_dai",
     },
-    {
-        "title": "Ưu đãi Lệ phí trước bạ cho xe máy điện VinFast",
-        "url": "https://vinfastauto.com/vn_vi/uu-dai-chuyen-doi-xanh-uu-dai-le-phi-truoc-ba-xe-may-dien-vinfast",
-        "category": "chinh_sach_uu_dai",
-    },
-    {
-        "title": "Chuyển đổi xanh - Ưu đãi 10% xe máy điện VinFast",
-        "url": "https://vinfastauto.com/vn_vi/uu-dai-chuyen-doi-xanh-10%25-xe-may-dien-vinfast",
-        "category": "chinh_sach_uu_dai",
-    },
 
     # --------------------------------------------------------------------------
-    # 3. HE_THONG_TRAM_SAC
+    # 3. HE_THONG_TRAM_SAC (Ô TÔ ĐIỆN)
     # --------------------------------------------------------------------------
     {
-        "title": "Mạng lưới trạm sạc xe điện toàn quốc VinFast & V-GREEN",
+        "title": "Mạng lưới trạm sạc ô tô điện toàn quốc VinFast & V-GREEN",
         "url": "https://vinfastauto.com/vn_vi/pin-va-tram-sac",
         "category": "he_thong_tram_sac",
     },
@@ -213,11 +178,6 @@ SEED_ENTRIES: list[dict[str, str]] = [
     {
         "title": "Chính sách và giải pháp lắp đặt bộ sạc tại nhà cho ô tô điện",
         "url": "https://vinfastauto.com/vn_vi/giai-phap-sac-tai-nha",
-        "category": "he_thong_tram_sac",
-    },
-    {
-        "title": "Dịch vụ thuê pin, mua pin và đổi pin xe máy điện VinFast",
-        "url": "https://vinfastauto.com/vn_vi/dich-vu-pin-xe-may-dien",
         "category": "he_thong_tram_sac",
     },
 
@@ -264,11 +224,6 @@ SEED_ENTRIES: list[dict[str, str]] = [
         "category": "thu_tuc_phap_ly",
     },
     {
-        "title": "Bảo hiểm trách nhiệm dân sự bắt buộc cho xe máy Bảo Việt",
-        "url": "https://baoviet.com/bao-hiem-xe-may-bao-viet.htm",
-        "category": "thu_tuc_phap_ly",
-    },
-    {
         "title": "Hướng dẫn thủ tục bấm biển số xe định danh online cổng Dịch vụ công",
         "url": "https://luatvietnam.vn/thu-tuc-dang-ky-bien-so-dinh-danh-561-92341-article.html",
         "category": "thu_tuc_phap_ly",
@@ -290,7 +245,7 @@ SEED_ENTRIES: list[dict[str, str]] = [
     },
 
     # --------------------------------------------------------------------------
-    # 6. TRAI_NGHIEM_DANH_GIA
+    # 6. TRAI_NGHIEM_DANH_GIA (Ô TÔ ĐIỆN VINFAST)
     # --------------------------------------------------------------------------
     {
         "title": "[ĐÁNH GIÁ XE] VinFast VF 8 thế hệ mới: Nhẹ hơn, êm hơn và thực dụng sau vô-lăng",
@@ -409,16 +364,11 @@ SEED_ENTRIES: list[dict[str, str]] = [
     },
 
     # --------------------------------------------------------------------------
-    # 7. HAU_MAI_BAO_DUONG
+    # 7. HAU_MAI_BAO_DUONG (Ô TÔ ĐIỆN VINFAST)
     # --------------------------------------------------------------------------
     {
         "title": "Chính sách bảo hành 10 năm hoặc 200.000 km cho ô tô điện VinFast",
         "url": "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-o-to",
-        "category": "hau_mai_bao_duong",
-    },
-    {
-        "title": "Chính sách bảo hành xe máy điện VinFast chính hãng",
-        "url": "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-xe-may",
         "category": "hau_mai_bao_duong",
     },
     {
@@ -497,8 +447,17 @@ def clean_text(text: str) -> str:
 
 
 def classify_topic_from_text(title: str, url: str) -> str | None:
-    """Tự động phân loại URL vào các nhóm chủ đề được phép (loại trừ gia_ca_lan_banh)."""
+    """Tự động phân loại URL vào các nhóm chủ đề được phép (loại trừ xe máy và giá lăn bánh)."""
     t = f"{title} {url}".lower()
+
+    # BỎ TOÀN BỘ DATA XE MÁY, XE ĐẠP ĐIỆN
+    motorbike_keywords = [
+        "xe-may", "xe máy", "xmd", "xe dap", "xe-dap", "xedap", "feliz",
+        "evo", "klara", "vento", "theon", "viper", "drgnfly", "ebike",
+        "e-scooter", "xe hai banh", "xe 2 banh", "scooter"
+    ]
+    if any(k in t for k in motorbike_keywords):
+        return None
 
     # Nếu là giá lăn bánh bên ngoài -> bỏ qua không thu thập (tránh xung đột với relational API)
     if any(k in t for k in ["lan-banh", "lăn bánh", "chi-phi-lan-banh"]):
@@ -525,11 +484,10 @@ def classify_topic_from_text(title: str, url: str) -> str | None:
 
 
 def discover_dynamic_news_urls(max_pages: int = 3) -> list[dict[str, str]]:
-    """Quét động các bài viết từ VinFast Auto và V-GREEN."""
+    """Quét động các bài viết từ VinFast Auto và V-GREEN (CHỈ Ô TÔ ĐIỆN)."""
     feeds = [
         {"url": "https://vinfastauto.com/vn_vi/uu-dai", "default_cat": "chinh_sach_uu_dai"},
         {"url": "https://vinfastauto.com/vn_vi/tin-tuc/o-to-dien", "default_cat": "trai_nghiem_danh_gia"},
-        {"url": "https://vinfastauto.com/vn_vi/tin-tuc/xe-may-dien", "default_cat": "thong_so_ky_thuat"},
         {"url": "https://vinfastauto.com/vn_vi/tin-tuc/cong-ty", "default_cat": "chinh_sach_uu_dai"},
         {"url": "https://vgreen.net/vi/tin-tuc", "default_cat": "he_thong_tram_sac"},
     ]

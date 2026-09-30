@@ -146,7 +146,6 @@ VINFAST_BROCHURE_TARGETS: list[dict[str, str]] = [
 VINFAST_POLICY_PAGES = [
     "https://vinfastauto.com/vn_vi/hop-dong-va-chinh-sach/chinh-sach/",
     "https://vinfastauto.com/vn_vi/hop-dong-va-chinh-sach/chinh-sach/cho-xe-oto",
-    "https://vinfastauto.com/vn_vi/hop-dong-va-chinh-sach/chinh-sach/cho-xe-may-dien",
 ]
 
 DEFAULT_USER_AGENT = (
@@ -315,12 +314,23 @@ def crawl_vinfast_faq_raw() -> dict[str, Any]:
 # ==============================================================================
 
 def crawl_vinfast_uudai_articles(max_pages: int = 3) -> list[dict[str, Any]]:
-    """Crawl toàn bộ các bài viết ưu đãi và khuyến mại từ vinfastauto.com/vn_vi/uu-dai lưu vào Bronze."""
-    print("\n[3/5] 🎁 CRAWL CÁC BÀI VIẾT ƯU ĐÃI TỪ TRANG CHỦ VINFAST (UU-DAI)...")
+    """Crawl toàn bộ các bài viết ưu đãi và khuyến mại Ô TÔ ĐIỆN từ vinfastauto.com/vn_vi/uu-dai lưu vào Bronze."""
+    print("\n[3/5] 🎁 CRAWL CÁC BÀI VIẾT ƯU ĐÃI Ô TÔ ĐIỆN TỪ TRANG CHỦ VINFAST (UU-DAI)...")
     articles_dir = BRONZE_VINFAST_DIR / "articles"
     articles_dir.mkdir(parents=True, exist_ok=True)
 
     from bs4 import BeautifulSoup
+
+    motorbike_keywords = [
+        "xe-may", "xe máy", "xmd", "xe dap", "xe-dap", "xedap", "feliz",
+        "evo", "klara", "vento", "theon", "viper", "drgnfly", "ebike",
+        "e-scooter", "xe hai banh", "xe 2 banh", "scooter"
+    ]
+
+    # Dọn dẹp các bài viết xe máy cũ nếu có
+    for f in list(articles_dir.glob("*.html")):
+        if any(k in f.name.lower() for k in motorbike_keywords):
+            f.unlink(missing_ok=True)
 
     seen_urls: set[str] = set()
     promo_articles: list[dict[str, str]] = []
@@ -338,10 +348,14 @@ def crawl_vinfast_uudai_articles(max_pages: int = 3) -> list[dict[str, Any]]:
             h = a["href"].strip()
             t = a.get_text(strip=True)
 
-            # Lọc các liên kết bài viết ưu đãi
+            # Bỏ qua hoàn toàn tin tức xe máy / xe đạp điện
+            if any(k in h.lower() or k in t.lower() for k in motorbike_keywords):
+                continue
+
+            # Lọc các liên kết bài viết ưu đãi ô tô
             if any(k in h for k in [
                 "uu-dai", "khuyen-mai", "chuong-trinh", "vi-tuong-lai-xanh",
-                "thu-xang-doi-dien", "back-to-school", "mcredit", "tang-bao-hiem",
+                "thu-xang-doi-dien", "mcredit", "tang-bao-hiem",
                 "mua-1-tang-1", "chuyen-doi-xanh", "tri-an"
             ]) and h not in ["/vn_vi/uu-dai", "https://vinfastauto.com/vn_vi/uu-dai"]:
                 full_url = f"https://vinfastauto.com{h}" if h.startswith("/") else h
@@ -353,7 +367,7 @@ def crawl_vinfast_uudai_articles(max_pages: int = 3) -> list[dict[str, Any]]:
                         "title": t or slug_title,
                     })
 
-    print(f"📄 Tìm thấy tổng cộng {len(promo_articles)} bài viết ưu đãi trên trang VinFast.")
+    print(f"📄 Tìm thấy tổng cộng {len(promo_articles)} bài viết ưu đãi ô tô điện trên trang VinFast.")
     manifest_entries: list[dict[str, Any]] = []
 
     for idx, item in enumerate(promo_articles, 1):
@@ -383,13 +397,17 @@ def crawl_vinfast_uudai_articles(max_pages: int = 3) -> list[dict[str, Any]]:
             print(f"   ⚠️ Không tải được nội dung từ {url}")
         random_delay(0.2, 0.5)
 
-    # Cập nhật vinfast_sources_manifest.json
+    # Cập nhật vinfast_sources_manifest.json (chỉ giữ file ô tô)
     manifest_path = BRONZE_VINFAST_DIR / "vinfast_sources_manifest.json"
     existing_manifest: list[dict[str, Any]] = []
     if manifest_path.exists():
         try:
             with open(manifest_path, encoding="utf-8") as f:
-                existing_manifest = json.load(f)
+                raw_list = json.load(f)
+                existing_manifest = [
+                    e for e in raw_list
+                    if not any(k in e.get("file", "").lower() or k in e.get("title", "").lower() for k in motorbike_keywords)
+                ]
         except Exception:
             existing_manifest = []
 
@@ -413,17 +431,26 @@ def crawl_vinfast_pdf_documents() -> dict[str, Any]:
     PDF_SPECS_DIR.mkdir(parents=True, exist_ok=True)
     PDF_PROMO_DIR.mkdir(parents=True, exist_ok=True)
 
-    # 1. Dọn dẹp các file cũ không thuộc 2026 hoặc xe xăng trong chinh_sach_uu_dai
-    petrol_keywords = ["xang", "lux", "fadil", "president", "chevrolet"]
+    # 1. Dọn dẹp các file cũ không thuộc 2026 hoặc xe xăng / xe máy trong chinh_sach_uu_dai
+    petrol_and_motorbike_keywords = [
+        "xang", "lux", "fadil", "president", "chevrolet", "xmd", "xe-may",
+        "xe_may", "xemay", "xedap", "xe-dap", "feliz", "evo", "klara",
+        "vento", "theon", "viper", "drgnfly", "ebike", "scooter"
+    ]
     for f in list(PDF_PROMO_DIR.iterdir()):
         name_lower = f.name.lower()
         is_2026 = "2026" in name_lower
-        is_petrol = any(k in name_lower for k in petrol_keywords)
+        is_petrol_or_moto = any(k in name_lower for k in petrol_and_motorbike_keywords)
         is_pdf = f.name.endswith(".pdf")
-        if not is_2026 or is_petrol or not is_pdf:
+        if not is_2026 or is_petrol_or_moto or not is_pdf:
             f.unlink(missing_ok=True)
 
-    # 2. Quét và tải chính sách năm 2026 dành cho xe điện từ các trang chính sách VinFast
+    # Dọn dẹp tài liệu pháp lý xe máy nếu có
+    for f in list(PDF_LEGAL_DIR.iterdir()):
+        if any(k in f.name.lower() for k in ["xe_may", "xemay", "xe-may"]):
+            f.unlink(missing_ok=True)
+
+    # 2. Quét và tải chính sách năm 2026 dành cho ô tô điện từ các trang chính sách VinFast
     for page_url in VINFAST_POLICY_PAGES:
         print(f"🌐 Đang quét trang chính sách: {page_url}...")
         html = fetch_url_content(page_url, timeout=12)
@@ -433,24 +460,24 @@ def crawl_vinfast_pdf_documents() -> dict[str, Any]:
             from bs4 import BeautifulSoup
             soup = BeautifulSoup(html, "html.parser")
             preview_links = soup.find_all("a", class_="button-preview")
-            print(f"   -> Đang lọc chính sách năm 2026 dành cho xe điện...")
+            print(f"   -> Đang lọc chính sách năm 2026 dành cho ô tô điện...")
             saved_count = 0
             for a in preview_links:
                 pdf_url = a["href"]
                 fname = pdf_url.split("/")[-1].split("?")[0]
                 fname_lower = fname.lower()
 
-                # Chỉ lấy chính sách 2026 và dành cho xe điện (bỏ qua xe xăng cũ)
+                # Chỉ lấy chính sách 2026 và dành cho ô tô điện (bỏ qua xe xăng & xe máy)
                 is_2026 = "2026" in fname_lower
-                is_petrol = any(k in fname_lower for k in ["xang", "lux", "fadil", "president", "chevrolet"])
-                if is_2026 and not is_petrol:
+                is_petrol_or_moto = any(k in fname_lower for k in petrol_and_motorbike_keywords)
+                if is_2026 and not is_petrol_or_moto:
                     dest = PDF_PROMO_DIR / fname
                     if not dest.exists():
                         if download_binary_pdf(pdf_url, dest, timeout=15):
                             saved_count += 1
                     else:
                         saved_count += 1
-            print(f"   -> Đã tải / cập nhật {saved_count} chính sách xe điện năm 2026.")
+            print(f"   -> Đã tải / cập nhật {saved_count} chính sách ô tô điện năm 2026.")
         except Exception as e:
             print(f"   ⚠️ Lỗi phân tích trang chính sách: {e}")
 
@@ -543,6 +570,12 @@ def crawl_sources_raw(csv_path: Path | None = None) -> dict[str, Any]:
     vinfast_articles_dir.mkdir(parents=True, exist_ok=True)
     webscraping_html_dir.mkdir(parents=True, exist_ok=True)
 
+    motorbike_keywords = [
+        "xe-may", "xe máy", "xmd", "xe dap", "xe-dap", "xedap", "feliz",
+        "evo", "klara", "vento", "theon", "viper", "drgnfly", "ebike",
+        "e-scooter", "xe hai banh", "xe 2 banh", "scooter"
+    ]
+
     # Đọc danh sách URLs từ sources.csv
     records: list[dict[str, str]] = []
     seen: set[str] = set()
@@ -555,6 +588,10 @@ def crawl_sources_raw(csv_path: Path | None = None) -> dict[str, Any]:
 
             # Bỏ qua chủ đề giá lăn bánh để tránh xung đột
             if category == "gia_ca_lan_banh":
+                continue
+
+            # Bỏ qua toàn bộ xe máy
+            if any(k in title.lower() or k in url.lower() for k in motorbike_keywords):
                 continue
 
             # Thông số kỹ thuật chỉ cho phép từ VinFast
