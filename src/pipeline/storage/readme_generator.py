@@ -83,7 +83,7 @@ def generate_bronze_readme(
 
     md = f"""# 🥉 Bronze Layer: Raw Automotive Data Ingestion
 
-> **Thời gian cập nhật:** `{now_str}`  
+> **Thời gian cập nhật:** `{now_str}`
 > **Trạng thái:** Hoàn tất thu thập dữ liệu thô (Raw Data Layer).
 
 ---
@@ -168,8 +168,8 @@ def generate_silver_readme(silver_dir: Path, report: Any, config: Any | None = N
 
     md = f"""# 🥈 Silver Layer: Normalized & Structured Pre-RAG Data
 
-> **Thời gian cập nhật:** `{now_str}`  
-> **Thời gian thực thi:** `{elapsed:.2f}s`  
+> **Thời gian cập nhật:** `{now_str}`
+> **Thời gian thực thi:** `{elapsed:.2f}s`
 > **Trạng thái:** Chuẩn hóa hoàn tất từ {total_bronze} bản ghi Bronze.
 
 ---
@@ -294,8 +294,8 @@ def generate_gold_readme(gold_dir: Path, report_dict: dict[str, Any], config: An
 
     md = f"""# 🥇 Gold Layer: Curated Car Purchasing Consultation Knowledge
 
-> **Thời gian cập nhật:** `{now_str}`  
-> **Thời gian thực thi:** `{elapsed:.2f}s`  
+> **Thời gian cập nhật:** `{now_str}`
+> **Thời gian thực thi:** `{elapsed:.2f}s`
 > **Miền tri thức:** Tư vấn mua bán xe & pháp lý sở hữu ô tô điện (Car Purchasing Consultation)
 
 ---

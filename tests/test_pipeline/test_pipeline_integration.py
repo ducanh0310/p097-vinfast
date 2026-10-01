@@ -2,8 +2,8 @@
 
 import json
 
-from pipeline.bronze_to_silver import BronzeToSilverPipeline
-from pipeline.config import PipelineConfig
+from src.pipeline.bronze_to_silver import BronzeToSilverPipeline
+from src.pipeline.config import PipelineConfig
 
 
 def test_pipeline_execution(tmp_path):

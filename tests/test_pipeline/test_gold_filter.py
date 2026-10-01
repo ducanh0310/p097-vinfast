@@ -1,7 +1,7 @@
 """Unit tests for Gold Filter and Car Purchasing Classification."""
 
-from pipeline.filters.gold_filter import GoldConsultationFilter
-from pipeline.models.schemas import SilverChunk
+from src.pipeline.filters.gold_filter import GoldConsultationFilter
+from src.pipeline.models.schemas import SilverChunk
 
 
 def test_traffic_penalties_filtered_out():

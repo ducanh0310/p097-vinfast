@@ -1,10 +1,8 @@
-"""
-Unit tests for URL Discovery, Filters, and Raw Crawler logic.
-"""
+"""Unit tests for URL Discovery, Filters, and Raw Crawler logic."""
 
 from pathlib import Path
 
-from pipeline.crawlers.url_discoverer import UrlDiscoverer
+from src.pipeline.crawlers.url_discoverer import UrlDiscoverer
 
 
 def test_url_discoverer_seeds():

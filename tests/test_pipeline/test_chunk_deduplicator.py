@@ -1,10 +1,10 @@
-"""
-Unit tests for ChunkDeduplicator.
+"""Unit tests for ChunkDeduplicator.
+
 Tests exact deduplication, near-duplicate similarity, and provenance tracking.
 """
 
-from pipeline.filters.chunk_deduplicator import ChunkDeduplicator
-from pipeline.models.schemas import SilverChunk
+from src.pipeline.filters.chunk_deduplicator import ChunkDeduplicator
+from src.pipeline.models.schemas import SilverChunk
 
 
 def test_exact_deduplication_prefers_deeper_heading():

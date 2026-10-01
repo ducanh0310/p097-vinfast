@@ -59,7 +59,7 @@ def _archive(pending: Path) -> None:
     today = datetime.now(UTC).strftime("%Y-%m-%d")
 
     lines_by_date = {}
-    with open(pending, "r", encoding="utf-8") as src:
+    with open(pending, encoding="utf-8") as src:
         for line in src:
             stripped = line.strip()
             if not stripped:
