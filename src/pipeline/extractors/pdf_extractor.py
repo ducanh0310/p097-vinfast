@@ -95,54 +95,130 @@ class PDFExtractor(BaseExtractor):
                 logger.error("Error reading PDF %s: %s", file_path, e)
 
     def _extract_pdf_content(self, file_path: Path, doc_title: str) -> str | None:
-        """Extracts text page-by-page, strips page numbers, and structures markdown headings."""
+        """Extracts text and tables page-by-page, strips page noise, and structures markdown."""
         try:
             with pymupdf.open(str(file_path)) as doc:
                 num_pages = len(doc)
                 if num_pages == 0:
                     return None
 
-                markdown_lines = []
+                markdown_sections = []
                 if doc_title:
-                    markdown_lines.append(f"# {doc_title}\n")
+                    markdown_sections.append(f"# {doc_title}")
+
+                # For brochures, policies, and spec sheets (<= 30 pages), run full table reconstruction
+                # For heavy legal documents (> 30 pages), run fast line extraction
+                is_short_or_brochure = num_pages <= 30
 
                 for page_idx in range(num_pages):
                     page = doc[page_idx]
-                    page_text = page.get_text("text")
-                    if not page_text or not page_text.strip():
-                        continue
 
-                    lines = page_text.split("\n")
-                    for line in lines:
-                        stripped = line.strip()
-                        if not stripped:
+                    if is_short_or_brochure:
+                        # 1. Detect and extract structured tables
+                        try:
+                            table_finder = page.find_tables()
+                            tables = table_finder.tables if table_finder else []
+                        except Exception:
+                            tables = []
+
+                        table_rects = [pymupdf.Rect(t.bbox) for t in tables]
+                        page_items: list[tuple[float, str, str]] = []  # (y0, type, content)
+
+                        for tab in tables:
+                            try:
+                                md_table = tab.to_markdown().strip()
+                                if md_table:
+                                    page_items.append((tab.bbox[1], "table", md_table))
+                            except Exception:
+                                pass
+
+                        # 2. Extract text blocks not inside table bounding boxes
+                        try:
+                            blocks = page.get_text("blocks")
+                        except Exception:
+                            blocks = []
+
+                        for b in blocks:
+                            if len(b) < 5 or b[6] != 0:  # 0 is text block
+                                continue
+
+                            r = pymupdf.Rect(b[:4])
+                            if any(r.intersects(tr) for tr in table_rects):
+                                continue
+
+                            raw_text = b[4].strip()
+                            if not raw_text:
+                                continue
+
+                            processed_lines = []
+                            for line in raw_text.split("\n"):
+                                stripped = line.strip()
+                                if not stripped:
+                                    continue
+
+                                if self.page_number_regex.match(stripped):
+                                    continue
+
+                                if self.print_noise_regex.search(stripped):
+                                    stripped = self.print_noise_regex.sub("", stripped).strip()
+                                    if not stripped:
+                                        continue
+
+                                if self.chapter_regex.match(stripped):
+                                    processed_lines.append(f"\n## {stripped}\n")
+                                    continue
+
+                                if self.article_regex.match(stripped):
+                                    processed_lines.append(f"\n### {stripped}\n")
+                                    continue
+
+                                processed_lines.append(stripped)
+
+                            if processed_lines:
+                                block_md = "\n".join(processed_lines).strip()
+                                page_items.append((b[1], "text", block_md))
+
+                        # Sort items by vertical position y0 and assemble page
+                        page_items.sort(key=lambda item: item[0])
+                        page_content = "\n\n".join(item[2] for item in page_items).strip()
+                        if page_content:
+                            markdown_sections.append(page_content)
+
+                    else:
+                        # Fast path for long legal codes
+                        page_text = page.get_text("text")
+                        if not page_text or not page_text.strip():
                             continue
 
-                        # Filter out pure page numbers
-                        if self.page_number_regex.match(stripped):
-                            continue
-
-                        # Strip or filter browser print noise
-                        if self.print_noise_regex.search(stripped):
-                            stripped = self.print_noise_regex.sub("", stripped).strip()
+                        lines = page_text.split("\n")
+                        processed_lines = []
+                        for line in lines:
+                            stripped = line.strip()
                             if not stripped:
                                 continue
 
-                        # Format legal chapters as ## Chương ...
-                        if self.chapter_regex.match(stripped):
-                            markdown_lines.append(f"\n## {stripped}\n")
-                            continue
+                            if self.page_number_regex.match(stripped):
+                                continue
 
-                        # Format legal articles as ### Điều ...
-                        if self.article_regex.match(stripped):
-                            markdown_lines.append(f"\n### {stripped}\n")
-                            continue
+                            if self.print_noise_regex.search(stripped):
+                                stripped = self.print_noise_regex.sub("", stripped).strip()
+                                if not stripped:
+                                    continue
 
-                        markdown_lines.append(stripped)
+                            if self.chapter_regex.match(stripped):
+                                processed_lines.append(f"\n## {stripped}\n")
+                                continue
 
-                    markdown_lines.append("")  # Page boundary separator
+                            if self.article_regex.match(stripped):
+                                processed_lines.append(f"\n### {stripped}\n")
+                                continue
 
-                return "\n".join(markdown_lines).strip()
+                            processed_lines.append(stripped)
+
+                        if processed_lines:
+                            markdown_sections.append("\n".join(processed_lines).strip())
+
+                return "\n\n".join(markdown_sections).strip()
         except Exception as e:
             logger.error("Failed parsing PDF content from %s: %s", file_path, e)
             return None

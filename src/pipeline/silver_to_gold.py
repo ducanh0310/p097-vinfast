@@ -154,7 +154,10 @@ class SilverToGoldPipeline:
         self.writer.write_faq_items(gold_faq)
         self.writer.write_vehicles(gold_vehicles)
 
-        # 7. Persist Gold Relational RDB Schema (Electric Cars only)
+        # 7. Partition Gold Chunks by Topic into dataset/gold/by_topic/
+        topic_partition_stats = self.writer.write_topics(gold_chunks)
+
+        # 8. Persist Gold Relational RDB Schema (Electric Cars only)
         relational_extractor = RelationalExtractor(bronze_dir=self.config.bronze_dir)
         gold_rdb_tables = relational_extractor.get_relational_tables(cars_only=True)
         self.writer.write_rdb_schema(gold_rdb_tables)
@@ -181,6 +184,7 @@ class SilverToGoldPipeline:
             "total_gold_faq": len(gold_faq),
             "total_gold_vehicles": len(gold_vehicles),
             "gold_topic_distribution": dict(topic_distribution),
+            "topic_partitions": topic_partition_stats,
             "top_filter_reasons": dict(dropped_reasons.most_common(10)),
         }
 

@@ -150,17 +150,44 @@ class GoldConsultationFilter:
         if any(mb in content for mb in motorbike_content_kws) and not any(car in content for car in car_presence_kws):
             return False, None, 0.0, "Pure motorbike content outside electric car consultation scope"
 
-        # 3. Negative Traffic Conduct Section Check
+        # 3. Negative Non-Automotive Asset Check in Legal Docs (Aviation, Maritime, Real Estate)
+        non_auto_legal_kws = [
+            "tàu bay", "hàng không", "phi cơ", "máy bay", "cảng hàng không",
+            "kinh doanh vận chuyển hàng không", "an ninh hàng không", "bưu gửi",
+            "tàu thủy", "thuyền", "đường thủy nội địa", "tàu cao tốc", "tàu khách cao tốc",
+            "tàu thu gom rác", "tàu vận tải công-ten-nơ", "công-ten-nơ", "sức ngựa",
+            "tổng công suất máy chính", "sức chở người đến 12 người", "ca nô", "du thuyền",
+            "hàng hải", "luồng hàng hải", "bến thủy", "cảng biển", "phao tiêu",
+            "nhà ở, đất ở", "thửa đất", "quyền sử dụng đất", "ranh giới của thửa đất",
+            "ranh giới thửa đất", "chuyển quyền sử dụng đất", "tiền thuê đất",
+            "chuẩn nghèo", "đồng bào dân tộc thiểu số", "vùng khó khăn",
+            "nhà xưởng của cơ sở", "kho chứa", "cháy nổ cơ sở", "súng săn", "vũ khí thể thao",
+            "cổ đông sáng lập", "chuyển đổi loại hình doanh nghiệp",
+            "chuyển đổi lọai hình doanh nghiệp",
+        ]
+        if chunk.source_type == "pdf" or "nghi dinh" in title_lower or "thong tu" in title_lower:
+            if any(non_car in content for non_car in non_auto_legal_kws):
+                car_explicit = any(
+                    car_kw in content
+                    for car_kw in ["ô tô", "xe ô tô", "xe điện", "vinfast", "ô tô điện", "vf 3", "vf 5", "vf 6", "vf 7", "vf 8", "vf 9", "xe 4 chỗ", "xe 5 chỗ", "xe 7 chỗ"]
+                )
+                if not car_explicit or any(
+                    kw in content
+                    for kw in ["tàu bay", "tàu thủy", "thuyền", "nhà ở, đất ở", "thửa đất", "đường thủy nội địa", "vận chuyển hàng không", "an ninh hàng không"]
+                ):
+                    return False, None, 0.0, "Non-automotive asset in legal document (aviation, maritime, real estate, enterprise restructuring)"
+
+        # 4. Negative Traffic Conduct Section Check
         if IRRELEVANT_TRAFFIC_RULES_REGEX.search(content):
             return False, None, 0.0, "Irrelevant traffic driving rule or penalty"
 
-        # 4. Insurance Document (Nghi Dinh 67) Special Check
+        # 5. Insurance Document (Nghi Dinh 67) Special Check
         if "nghi dinh 67 2023" in title_lower:
             has_buyer_relevance = any(kw in content for kw in INSURANCE_BUYING_KEYWORDS)
             if not has_buyer_relevance:
                 return False, None, 0.0, "Insurance enterprise bureaucracy (non-vehicle buyer relevance)"
 
-        # 5. Check for pure noise
+        # 6. Check for pure noise
         if "about: blank" in content and len(content.strip()) < 100:
             return False, None, 0.0, "Empty browser print noise"
 
