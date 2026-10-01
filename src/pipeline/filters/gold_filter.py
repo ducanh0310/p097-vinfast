@@ -5,7 +5,7 @@ and non-automotive legal regulations, retaining only content directly assisting 
 """
 
 import re
-from typing import Dict, List, Optional, Tuple
+
 from ..models.schemas import SilverChunk, SilverDocument
 
 # Completely excluded legal/penalties documents (irrelevant to car purchasing)
@@ -62,7 +62,7 @@ INSURANCE_BUYING_KEYWORDS = [
 ]
 
 # Domain taxonomy keywords for car purchasing and consultation
-TOPIC_TAXONOMY: Dict[str, List[str]] = {
+TOPIC_TAXONOMY: dict[str, list[str]] = {
     "bao_gia_chi_phi": [
         "giá xe", "giá niêm yết", "giá bán", "lăn bánh", "chi phí lăn bánh",
         "lệ phí trước bạ", "trước bạ", "biển số", "phí cấp biển", "phí đăng ký",
@@ -108,7 +108,7 @@ class GoldConsultationFilter:
     def __init__(self, min_score: float = 0.5):
         self.min_score = min_score
 
-    def evaluate_chunk(self, chunk: SilverChunk) -> Tuple[bool, Optional[str], float, str]:
+    def evaluate_chunk(self, chunk: SilverChunk) -> tuple[bool, str | None, float, str]:
         """
         Evaluate if a SilverChunk is relevant to car purchasing / buyer consultation.
         Returns: (admitted, gold_topic, score, reason)
@@ -160,7 +160,7 @@ class GoldConsultationFilter:
 
         return False, None, 0.0, "No car purchasing or consultation relevance"
 
-    def evaluate_document(self, doc: SilverDocument) -> Tuple[bool, Optional[str], float, str]:
+    def evaluate_document(self, doc: SilverDocument) -> tuple[bool, str | None, float, str]:
         """Evaluate if an entire SilverDocument should be preserved in Gold."""
         title_lower = doc.title.lower()
         source_id = doc.source_id.lower()

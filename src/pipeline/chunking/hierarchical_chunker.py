@@ -5,9 +5,9 @@ coupled with Vietnamese sentence boundary awareness.
 """
 
 import re
-from typing import List, Tuple, Optional
-from ..nlp.sentence_splitter import VietnameseSentenceSplitter
+
 from ..models.schemas import SilverChunk
+from ..nlp.sentence_splitter import VietnameseSentenceSplitter
 
 
 class HierarchicalChunker:
@@ -33,17 +33,17 @@ class HierarchicalChunker:
             re.IGNORECASE,
         )
 
-    def _parse_sections(self, markdown_text: str) -> List[Tuple[List[str], str]]:
+    def _parse_sections(self, markdown_text: str) -> list[tuple[list[str], str]]:
         """
         Parses markdown text into sections, tracking heading hierarchy.
         Returns a list of (heading_path, block_text).
         """
         lines = markdown_text.split("\n")
-        sections: List[Tuple[List[str], str]] = []
+        sections: list[tuple[list[str], str]] = []
 
         # Current stack of headings: list of (level, heading_text)
-        heading_stack: List[Tuple[int, str]] = []
-        current_block_lines: List[str] = []
+        heading_stack: list[tuple[int, str]] = []
+        current_block_lines: list[str] = []
 
         def flush_current_block():
             nonlocal current_block_lines
@@ -55,7 +55,6 @@ class HierarchicalChunker:
 
         i = 0
         in_code_block = False
-        in_table = False
 
         while i < len(lines):
             line = lines[i]
@@ -114,13 +113,13 @@ class HierarchicalChunker:
         markdown_text: str,
         category: str = "general",
         source_type: str = "document",
-        url: Optional[str] = None,
-    ) -> List[SilverChunk]:
+        url: str | None = None,
+    ) -> list[SilverChunk]:
         """
         Splits markdown document into semantic chunks with breadcrumbs and overlap.
         """
         sections = self._parse_sections(markdown_text)
-        chunks: List[SilverChunk] = []
+        chunks: list[SilverChunk] = []
         chunk_idx = 0
 
         for heading_path, section_text in sections:
@@ -154,7 +153,7 @@ class HierarchicalChunker:
 
             # Otherwise, split section by Vietnamese sentences
             sentences = self.sentence_splitter.split_sentences(section_text)
-            current_chunk_sentences: List[str] = []
+            current_chunk_sentences: list[str] = []
             current_len = 0
 
             s_idx = 0
@@ -186,7 +185,7 @@ class HierarchicalChunker:
                         chunk_idx += 1
 
                     # Compute overlap from end of current sentences
-                    overlap_sentences: List[str] = []
+                    overlap_sentences: list[str] = []
                     overlap_len = 0
                     for prev_s in reversed(current_chunk_sentences):
                         if overlap_len + len(prev_s) <= self.chunk_overlap:

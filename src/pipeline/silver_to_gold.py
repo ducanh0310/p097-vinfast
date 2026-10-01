@@ -5,18 +5,17 @@ extracting a curated, high-precision Gold knowledge base specialized in
 Car Purchasing Consultation (Tư vấn Mua bán xe & Pháp lý sở hữu xe).
 """
 
-from collections import Counter
-from datetime import datetime, timezone
 import json
 import logging
-from pathlib import Path
 import time
-from typing import Any, Dict, List, Optional
+from collections import Counter
+from datetime import UTC, datetime
+from typing import Any
 
-from .config import PipelineConfig, DEFAULT_CONFIG
+from .config import DEFAULT_CONFIG, PipelineConfig
 from .extractors.relational_extractor import RelationalExtractor
-from .filters.gold_filter import GoldConsultationFilter
 from .filters.chunk_deduplicator import ChunkDeduplicator
+from .filters.gold_filter import GoldConsultationFilter
 from .models.schemas import SilverChunk, SilverDocument, SilverFAQItem, SilverVehicle
 from .storage.gold_writer import GoldWriter
 
@@ -26,7 +25,7 @@ logger = logging.getLogger(__name__)
 class SilverToGoldPipeline:
     """Pipeline transforming Silver dataset into car-purchasing specialized Gold layer with deduplication."""
 
-    def __init__(self, config: Optional[PipelineConfig] = None):
+    def __init__(self, config: PipelineConfig | None = None):
         self.config = config or DEFAULT_CONFIG
         self.gold_filter = GoldConsultationFilter()
         self.deduplicator = ChunkDeduplicator(
@@ -36,10 +35,10 @@ class SilverToGoldPipeline:
         )
         self.writer = GoldWriter(gold_dir=self.config.gold_dir)
 
-    def run(self) -> Dict[str, Any]:
+    def run(self) -> dict[str, Any]:
         """Runs the Silver to Gold filtering and curation."""
         start_time = time.time()
-        start_iso = datetime.now(timezone.utc).isoformat()
+        start_iso = datetime.now(UTC).isoformat()
         logger.info("Starting Silver-to-Gold Pipeline execution...")
 
         silver_dir = self.config.silver_dir
@@ -52,8 +51,8 @@ class SilverToGoldPipeline:
             raise FileNotFoundError(f"Silver chunks file missing at {chunks_file}. Run Silver pipeline first.")
 
         # 1. Load Silver Chunks
-        silver_chunks: List[SilverChunk] = []
-        with open(chunks_file, "r", encoding="utf-8") as f:
+        silver_chunks: list[SilverChunk] = []
+        with open(chunks_file, encoding="utf-8") as f:
             for line in f:
                 if line.strip():
                     data = json.loads(line)
@@ -61,7 +60,7 @@ class SilverToGoldPipeline:
         logger.info("Loaded %d Silver chunks", len(silver_chunks))
 
         # 2. Filter and Tag Gold Chunks by relevance
-        relevant_chunks: List[SilverChunk] = []
+        relevant_chunks: list[SilverChunk] = []
         dropped_reasons = Counter()
 
         for chunk in silver_chunks:
@@ -109,9 +108,9 @@ class SilverToGoldPipeline:
 
         # 3. Load and Filter Silver Documents
         admitted_doc_ids = set(c.doc_id for c in gold_chunks)
-        gold_documents: List[SilverDocument] = []
+        gold_documents: list[SilverDocument] = []
         if docs_file.exists():
-            with open(docs_file, "r", encoding="utf-8") as f:
+            with open(docs_file, encoding="utf-8") as f:
                 for line in f:
                     if line.strip():
                         doc_data = json.loads(line)
@@ -127,17 +126,17 @@ class SilverToGoldPipeline:
         logger.info("Admitted %d Gold documents", len(gold_documents))
 
         # 4. Load FAQ items (100% relevant to customer consultation)
-        gold_faq: List[SilverFAQItem] = []
+        gold_faq: list[SilverFAQItem] = []
         if faq_file.exists():
-            with open(faq_file, "r", encoding="utf-8") as f:
+            with open(faq_file, encoding="utf-8") as f:
                 for line in f:
                     if line.strip():
                         gold_faq.append(SilverFAQItem(**json.loads(line)))
 
         # 5. Load Vehicles (100% relevant to pricing & quotes)
-        gold_vehicles: List[SilverVehicle] = []
+        gold_vehicles: list[SilverVehicle] = []
         if vehicles_file.exists():
-            with open(vehicles_file, "r", encoding="utf-8") as f:
+            with open(vehicles_file, encoding="utf-8") as f:
                 for line in f:
                     if line.strip():
                         gold_vehicles.append(SilverVehicle(**json.loads(line)))
@@ -160,7 +159,7 @@ class SilverToGoldPipeline:
             "pipeline_stage": "silver_to_gold",
             "target_domain": "Tư vấn mua bán xe & pháp lý sở hữu xe (Car Purchasing Consultation)",
             "started_at": start_iso,
-            "completed_at": datetime.now(timezone.utc).isoformat(),
+            "completed_at": datetime.now(UTC).isoformat(),
             "elapsed_seconds": elapsed,
             "total_silver_chunks": len(silver_chunks),
             "relevant_chunks_before_dedup": len(relevant_chunks),

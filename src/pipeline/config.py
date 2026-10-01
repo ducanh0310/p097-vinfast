@@ -5,7 +5,6 @@ Contains paths, hyperparameters, quality thresholds, and defaults.
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List
 
 
 def find_workspace_root() -> Path:

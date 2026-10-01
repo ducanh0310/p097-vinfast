@@ -8,8 +8,8 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-from pathlib import Path
 import sys
+from pathlib import Path
 
 # Ensure UTF-8 console output on Windows
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
@@ -26,12 +26,12 @@ if __package__ is None or __package__ == "":
         sys.path.insert(0, str(src_parent))
     __package__ = "pipeline"
 
+from .bronze_to_silver import BronzeToSilverPipeline
 from .config import PipelineConfig
 from .crawlers.raw_crawler import RawCrawler
 from .crawlers.url_discoverer import UrlDiscoverer
-from .bronze_to_silver import BronzeToSilverPipeline
-from .silver_to_gold import SilverToGoldPipeline
 from .orchestrator import PreRAGPipeline
+from .silver_to_gold import SilverToGoldPipeline
 
 
 def setup_logging(verbose: bool = False):
@@ -214,7 +214,7 @@ def cmd_stats(args):
         print(f"[ERROR] Report file not found at {report_file}. Have you run the pipeline yet?")
         sys.exit(1)
 
-    with open(report_file, "r", encoding="utf-8") as f:
+    with open(report_file, encoding="utf-8") as f:
         data = json.load(f)
 
     print(json.dumps(data, indent=2, ensure_ascii=False))
@@ -238,7 +238,7 @@ def cmd_sample(args):
         sys.exit(1)
 
     print(f"--- Displaying {args.n} sample records from {target_file.name} ---")
-    with open(target_file, "r", encoding="utf-8") as f:
+    with open(target_file, encoding="utf-8") as f:
         for idx, line in enumerate(f):
             if idx >= args.n:
                 break

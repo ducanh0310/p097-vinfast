@@ -8,14 +8,14 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
+from .bronze_to_silver import BronzeToSilverPipeline
 from .config import DEFAULT_CONFIG, PipelineConfig
 from .crawlers.raw_crawler import CrawlReport, RawCrawler
 from .crawlers.url_discoverer import UrlDiscoverer
-from .bronze_to_silver import BronzeToSilverPipeline
 from .silver_to_gold import SilverToGoldPipeline
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 class PreRAGPipeline:
     """Master orchestrator for the Vietnamese Automotive Pre-RAG pipeline."""
 
-    def __init__(self, config: Optional[PipelineConfig] = None):
+    def __init__(self, config: PipelineConfig | None = None):
         self.config = config or DEFAULT_CONFIG
         self.crawler = RawCrawler(
             bronze_dir=self.config.bronze_dir,
@@ -37,7 +37,7 @@ class PreRAGPipeline:
     def crawl(
         self,
         include_dynamic_urls: bool = False,
-        sources_csv: Optional[Path] = None,
+        sources_csv: Path | None = None,
     ) -> CrawlReport:
         """Executes raw crawling stage into Bronze and PDF directories."""
         target_csv = sources_csv or self.config.sources_csv
@@ -54,7 +54,7 @@ class PreRAGPipeline:
         logger.info("Executing Bronze-to-Silver transformation...")
         return self.silver_pipeline.run()
 
-    def run_gold(self) -> Dict[str, Any]:
+    def run_gold(self) -> dict[str, Any]:
         """Runs the Silver-to-Gold car purchasing consultation filtering."""
         logger.info("Executing Silver-to-Gold consultation filtering...")
         return self.gold_pipeline.run()
@@ -63,10 +63,10 @@ class PreRAGPipeline:
         self,
         crawl_first: bool = False,
         include_dynamic_urls: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Runs the complete end-to-end Pre-RAG pipeline: [Crawl ->] Silver -> Gold."""
         start_time = time.time()
-        start_iso = datetime.now(timezone.utc).isoformat()
+        start_iso = datetime.now(UTC).isoformat()
         logger.info("Starting complete Pre-RAG pipeline...")
 
         crawl_summary = None
@@ -83,7 +83,7 @@ class PreRAGPipeline:
         summary = {
             "pipeline": "WeKnora Pre-RAG Complete Pipeline",
             "started_at": start_iso,
-            "completed_at": datetime.now(timezone.utc).isoformat(),
+            "completed_at": datetime.now(UTC).isoformat(),
             "elapsed_seconds": elapsed,
             "crawl_report": crawl_summary.__dict__ if crawl_summary else "skipped (used existing Bronze/PDF)",
             "silver_documents": silver_report.total_silver_documents,

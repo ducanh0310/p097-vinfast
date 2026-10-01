@@ -7,12 +7,13 @@ import json
 import logging
 import os
 import re
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator, List, Optional
+
 import pymupdf
 
-from .base import BaseExtractor
 from ..models.schemas import BronzeDocument
+from .base import BaseExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class PDFExtractor(BaseExtractor):
             return
 
         try:
-            with open(self.manifest_path, "r", encoding="utf-8") as f:
+            with open(self.manifest_path, encoding="utf-8") as f:
                 entries = json.load(f)
         except Exception as e:
             logger.error("Failed to read PDF manifest: %s", e)
@@ -87,7 +88,7 @@ class PDFExtractor(BaseExtractor):
             except Exception as e:
                 logger.error("Error reading PDF %s: %s", file_path, e)
 
-    def _extract_pdf_content(self, file_path: Path, doc_title: str) -> Optional[str]:
+    def _extract_pdf_content(self, file_path: Path, doc_title: str) -> str | None:
         """Extracts text page-by-page, strips page numbers, and structures markdown headings."""
         doc = pymupdf.open(str(file_path))
         num_pages = len(doc)

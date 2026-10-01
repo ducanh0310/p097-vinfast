@@ -1,7 +1,7 @@
 """Unit tests for Vietnamese Normalizer."""
 
-import pytest
 import unicodedata
+
 from pipeline.nlp.vietnamese_normalizer import VietnameseNormalizer
 
 

@@ -5,13 +5,14 @@ Parses 400 FAQ items into categorized Markdown knowledge documents and structure
 
 import hashlib
 import logging
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator, List, Tuple
+
 from bs4 import BeautifulSoup
 from markdownify import markdownify
 
-from .base import BaseExtractor
 from ..models.schemas import BronzeDocument, SilverFAQItem
+from .base import BaseExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +30,9 @@ class FAQExtractor(BaseExtractor):
     def __init__(self, bronze_dir: Path):
         self.bronze_dir = Path(bronze_dir)
         self.faq_html_path = self.bronze_dir / "vinfast" / "faq" / "vinfast_faq_raw.html"
-        self._cached_faq_items: List[SilverFAQItem] = []
+        self._cached_faq_items: list[SilverFAQItem] = []
 
-    def get_structured_faq_items(self) -> List[SilverFAQItem]:
+    def get_structured_faq_items(self) -> list[SilverFAQItem]:
         """Returns individual extracted and normalized FAQ Q&A items."""
         if not self._cached_faq_items:
             # Trigger extraction to populate cache
@@ -45,7 +46,7 @@ class FAQExtractor(BaseExtractor):
             return
 
         try:
-            with open(self.faq_html_path, "r", encoding="utf-8", errors="ignore") as f:
+            with open(self.faq_html_path, encoding="utf-8", errors="ignore") as f:
                 content = f.read()
 
             soup = BeautifulSoup(content, "html.parser")

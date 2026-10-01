@@ -7,14 +7,8 @@ from __future__ import annotations
 
 import csv
 import logging
-import os
-import re
 import subprocess
-import sys
-import urllib.parse
-import urllib.request
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +33,7 @@ VALID_CATEGORIES = {
     "hau_mai_bao_duong",
 }
 
-SEED_ENTRIES: List[Dict[str, str]] = [
+SEED_ENTRIES: list[dict[str, str]] = [
     # 1. THONG_SO_KY_THUAT (Official VinFast EV only)
     {
         "title": "Thông số kỹ thuật & Thiết kế VinFast VF 3",
@@ -243,7 +237,7 @@ SEED_ENTRIES: List[Dict[str, str]] = [
 class UrlDiscoverer:
     """Discovers and validates URLs for Vietnamese electric vehicle purchasing knowledge."""
 
-    def __init__(self, seeds: Optional[List[Dict[str, str]]] = None):
+    def __init__(self, seeds: list[dict[str, str]] | None = None):
         self.seeds = seeds or SEED_ENTRIES
 
     @staticmethod
@@ -275,10 +269,10 @@ class UrlDiscoverer:
 
         return True
 
-    def discover_urls(self, include_dynamic: bool = False, max_pages: int = 2) -> List[Dict[str, str]]:
+    def discover_urls(self, include_dynamic: bool = False, max_pages: int = 2) -> list[dict[str, str]]:
         """Compiles validated URLs from seeds and optional dynamic feeds."""
-        seen_urls: Set[str] = set()
-        results: List[Dict[str, str]] = []
+        seen_urls: set[str] = set()
+        results: list[dict[str, str]] = []
 
         # 1. Ingest seed entries
         for seed in self.seeds:
@@ -304,9 +298,9 @@ class UrlDiscoverer:
         logger.info("Discovered %d valid consultation URLs", len(results))
         return results
 
-    def _crawl_dynamic_promos(self, max_pages: int = 2) -> List[Dict[str, str]]:
+    def _crawl_dynamic_promos(self, max_pages: int = 2) -> list[dict[str, str]]:
         """Scans VinFast promotion listing pages dynamically."""
-        entries: List[Dict[str, str]] = []
+        entries: list[dict[str, str]] = []
         try:
             from bs4 import BeautifulSoup
         except ImportError:

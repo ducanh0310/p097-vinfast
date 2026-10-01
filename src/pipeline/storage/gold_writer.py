@@ -6,7 +6,8 @@ Saves filtered, consultation-specialized Gold artifacts and audit report.
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
+
 from ..models.schemas import (
     SilverChunk,
     SilverDocument,
@@ -24,7 +25,7 @@ class GoldWriter:
         self.gold_dir = Path(gold_dir)
         self.gold_dir.mkdir(parents=True, exist_ok=True)
 
-    def write_documents(self, documents: List[SilverDocument]) -> Path:
+    def write_documents(self, documents: list[SilverDocument]) -> Path:
         """Writes Gold documents to gold_documents.jsonl."""
         out_path = self.gold_dir / "gold_documents.jsonl"
         with open(out_path, "w", encoding="utf-8") as f:
@@ -33,7 +34,7 @@ class GoldWriter:
         logger.info("Saved %d Gold documents to %s", len(documents), out_path)
         return out_path
 
-    def write_chunks(self, chunks: List[SilverChunk]) -> Path:
+    def write_chunks(self, chunks: list[SilverChunk]) -> Path:
         """Writes Gold chunks to gold_chunks.jsonl."""
         out_path = self.gold_dir / "gold_chunks.jsonl"
         with open(out_path, "w", encoding="utf-8") as f:
@@ -42,7 +43,7 @@ class GoldWriter:
         logger.info("Saved %d Gold chunks to %s", len(chunks), out_path)
         return out_path
 
-    def write_faq_items(self, faq_items: List[SilverFAQItem]) -> Path:
+    def write_faq_items(self, faq_items: list[SilverFAQItem]) -> Path:
         """Writes Gold FAQ items to gold_faq.jsonl."""
         out_path = self.gold_dir / "gold_faq.jsonl"
         with open(out_path, "w", encoding="utf-8") as f:
@@ -51,7 +52,7 @@ class GoldWriter:
         logger.info("Saved %d Gold FAQ items to %s", len(faq_items), out_path)
         return out_path
 
-    def write_vehicles(self, vehicles: List[SilverVehicle]) -> Path:
+    def write_vehicles(self, vehicles: list[SilverVehicle]) -> Path:
         """Writes Gold vehicles to gold_vehicles.jsonl."""
         out_path = self.gold_dir / "gold_vehicles.jsonl"
         with open(out_path, "w", encoding="utf-8") as f:
@@ -60,7 +61,7 @@ class GoldWriter:
         logger.info("Saved %d Gold vehicles to %s", len(vehicles), out_path)
         return out_path
 
-    def write_report(self, report_dict: Dict[str, Any]) -> Path:
+    def write_report(self, report_dict: dict[str, Any]) -> Path:
         """Writes audit metrics to gold_report.json and generates gold README.md."""
         out_path = self.gold_dir / "gold_report.json"
         with open(out_path, "w", encoding="utf-8") as f:
@@ -77,12 +78,12 @@ class GoldWriter:
 
         return out_path
 
-    def write_readme(self, report_dict: Dict[str, Any]) -> Path:
+    def write_readme(self, report_dict: dict[str, Any]) -> Path:
         """Explicitly generates dataset/gold/README.md."""
         from .readme_generator import generate_gold_readme
         return generate_gold_readme(self.gold_dir, report_dict)
 
-    def write_rdb_schema(self, tables: Dict[str, List[Dict[str, Any]]]) -> Path:
+    def write_rdb_schema(self, tables: dict[str, list[dict[str, Any]]]) -> Path:
         """Writes structured relational tables as CSV files into rdb_schema/."""
         import csv
         rdb_dir = self.gold_dir / "rdb_schema"

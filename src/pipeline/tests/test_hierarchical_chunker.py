@@ -1,6 +1,5 @@
 """Unit tests for Hierarchical Chunker."""
 
-import pytest
 from pipeline.chunking.hierarchical_chunker import HierarchicalChunker
 
 

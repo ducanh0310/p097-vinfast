@@ -2,9 +2,9 @@
 Pydantic and Dataclass schemas for Bronze and Silver entities.
 """
 
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
+from typing import Any
 
 
 @dataclass
@@ -13,13 +13,13 @@ class BronzeDocument:
     raw_id: str
     source_type: str  # 'html_article', 'faq', 'pdf', 'relational_snapshot'
     source_file: str
-    title: Optional[str] = None
-    url: Optional[str] = None
-    category: Optional[str] = None
-    domain: Optional[str] = None
-    raw_content: Optional[str] = None
-    raw_metadata: Dict[str, Any] = field(default_factory=dict)
-    crawled_at: Optional[str] = None
+    title: str | None = None
+    url: str | None = None
+    category: str | None = None
+    domain: str | None = None
+    raw_content: str | None = None
+    raw_metadata: dict[str, Any] = field(default_factory=dict)
+    crawled_at: str | None = None
 
 
 @dataclass
@@ -30,8 +30,8 @@ class SilverDocument:
     source_type: str
     title: str
     category: str
-    domain: Optional[str]
-    url: Optional[str]
+    domain: str | None
+    url: str | None
     language: str
     content_clean_markdown: str
     content_plain_text: str
@@ -41,10 +41,10 @@ class SilverDocument:
     diacritic_ratio: float
     quality_score: float
     checksum_sha256: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    processed_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    metadata: dict[str, Any] = field(default_factory=dict)
+    processed_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -54,7 +54,7 @@ class SilverChunk:
     chunk_id: str
     doc_id: str
     chunk_index: int
-    heading_path: List[str]
+    heading_path: list[str]
     heading_context: str
     content: str
     raw_chunk_text: str
@@ -62,10 +62,10 @@ class SilverChunk:
     char_count: int
     category: str
     source_type: str
-    url: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    url: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -78,12 +78,12 @@ class SilverFAQItem:
     answer_markdown: str
     category: str
     subcategory: str
-    vehicle_tags: List[str]
-    source_url: Optional[str] = None
-    doc_id: Optional[str] = None
+    vehicle_tags: list[str]
+    source_url: str | None = None
+    doc_id: str | None = None
     quality_score: float = 1.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -93,14 +93,14 @@ class SilverVehicle:
     vehicle_id: str
     model_name: str
     vehicle_type: str  # 'car' or 'bike'
-    trims: List[Dict[str, Any]]
-    battery_options: List[Dict[str, Any]]
-    specifications: Dict[str, Any]
-    promotions: List[str]
-    rolling_costs: Dict[str, Any]
+    trims: list[dict[str, Any]]
+    battery_options: list[dict[str, Any]]
+    specifications: dict[str, Any]
+    promotions: list[str]
+    rolling_costs: dict[str, Any]
     searchable_markdown: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -118,11 +118,11 @@ class SilverReport:
     total_vehicles: int
     duplicates_filtered: int
     low_quality_filtered: int
-    language_distribution: Dict[str, int]
-    source_distribution: Dict[str, int]
-    category_distribution: Dict[str, int]
+    language_distribution: dict[str, int]
+    source_distribution: dict[str, int]
+    category_distribution: dict[str, int]
     average_quality_score: float
     average_token_count_per_chunk: float
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)

@@ -2,8 +2,8 @@
 Crawlers and Ingestion module for Vietnamese Automotive Pre-RAG Pipeline.
 """
 
-from .url_discoverer import UrlDiscoverer, SEED_ENTRIES
-from .raw_crawler import RawCrawler, CrawlReport
+from .raw_crawler import CrawlReport, RawCrawler
+from .url_discoverer import SEED_ENTRIES, UrlDiscoverer
 
 __all__ = [
     "UrlDiscoverer",

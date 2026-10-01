@@ -9,18 +9,15 @@ import csv
 import http.cookiejar
 import json
 import logging
-import os
-import random
 import re
 import subprocess
-import sys
 import time
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 from .url_discoverer import DEFAULT_USER_AGENT, MOTORBIKE_KEYWORDS, SEED_ENTRIES
 
@@ -112,7 +109,7 @@ class CrawlReport:
     pdf_count: int = 0
     sources_crawled: int = 0
     elapsed_seconds: float = 0.0
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 
 class RawCrawler:
@@ -178,7 +175,7 @@ class RawCrawler:
             "-o", str(target_path),
         ]
         try:
-            res = subprocess.run(cmd, capture_output=True, timeout=timeout + 3)
+            subprocess.run(cmd, capture_output=True, timeout=timeout + 3)
             if target_path.exists() and target_path.stat().st_size > 1000:
                 with open(target_path, "rb") as f:
                     header = f.read(10)
@@ -190,7 +187,7 @@ class RawCrawler:
                 target_path.unlink(missing_ok=True)
         return False
 
-    def crawl_relational_pricing(self) -> Dict[str, Any]:
+    def crawl_relational_pricing(self) -> dict[str, Any]:
         """Queries VinFast rolling cost API and saves snapshot into Bronze."""
         self.relational_dir.mkdir(parents=True, exist_ok=True)
         snapshot_file = self.relational_dir / "vinfast_rolling_raw_snapshot.json"
@@ -233,7 +230,7 @@ class RawCrawler:
 
         return {"status": "failed", "bytes": 0}
 
-    def crawl_faq(self) -> Dict[str, Any]:
+    def crawl_faq(self) -> dict[str, Any]:
         """Downloads official VinFast FAQ HTML."""
         self.faq_dir.mkdir(parents=True, exist_ok=True)
         faq_file = self.faq_dir / "vinfast_faq_raw.html"
@@ -250,10 +247,10 @@ class RawCrawler:
 
         return {"status": "failed", "bytes": 0}
 
-    def crawl_promotions(self, max_pages: int = 2) -> List[Dict[str, Any]]:
+    def crawl_promotions(self, max_pages: int = 2) -> list[dict[str, Any]]:
         """Downloads official EV promotion articles into Bronze."""
         self.vinfast_articles_dir.mkdir(parents=True, exist_ok=True)
-        entries: List[Dict[str, Any]] = []
+        entries: list[dict[str, Any]] = []
 
         try:
             from bs4 import BeautifulSoup
@@ -261,7 +258,7 @@ class RawCrawler:
             logger.warning("BeautifulSoup not installed, skipping promotion crawl")
             return entries
 
-        promo_links: List[Dict[str, str]] = []
+        promo_links: list[dict[str, str]] = []
         for page in range(0, max_pages):
             page_url = f"https://vinfastauto.com/vn_vi/uu-dai?page={page}" if page > 0 else "https://vinfastauto.com/vn_vi/uu-dai"
             html = self.fetch_url(page_url, timeout=12)
@@ -300,7 +297,7 @@ class RawCrawler:
         existing = []
         if manifest_file.exists():
             try:
-                with open(manifest_file, "r", encoding="utf-8") as f:
+                with open(manifest_file, encoding="utf-8") as f:
                     existing = json.load(f)
             except Exception:
                 existing = []
@@ -315,14 +312,14 @@ class RawCrawler:
                     "domain": "vinfastauto.com",
                     "file": item["file"],
                     "bytes": item["bytes"],
-                    "crawled_at": datetime.now(timezone.utc).isoformat(),
+                    "crawled_at": datetime.now(UTC).isoformat(),
                 })
         with open(manifest_file, "w", encoding="utf-8") as f:
             json.dump(existing, f, ensure_ascii=False, indent=2)
 
         return entries
 
-    def crawl_brochures_and_policies(self) -> Dict[str, Any]:
+    def crawl_brochures_and_policies(self) -> dict[str, Any]:
         """Downloads vehicle brochures and updates the PDF manifest."""
         self.pdf_specs_dir.mkdir(parents=True, exist_ok=True)
         self.pdf_promo_dir.mkdir(parents=True, exist_ok=True)
@@ -337,7 +334,7 @@ class RawCrawler:
                     downloaded_brochures += 1
 
         # Recompile PDF manifest
-        manifest: List[Dict[str, Any]] = []
+        manifest: list[dict[str, Any]] = []
         for f in sorted(self.pdf_legal_dir.glob("*.pdf")):
             if f.stat().st_size > 1000:
                 manifest.append({
@@ -375,14 +372,14 @@ class RawCrawler:
 
         return {"total_pdfs": len(manifest), "new_brochures": downloaded_brochures}
 
-    def crawl_sources(self, sources_csv: Optional[Path] = None) -> List[Dict[str, Any]]:
+    def crawl_sources(self, sources_csv: Path | None = None) -> list[dict[str, Any]]:
         """Downloads external verified articles and saves into Bronze."""
         self.vinfast_articles_dir.mkdir(parents=True, exist_ok=True)
         self.webscraping_html_dir.mkdir(parents=True, exist_ok=True)
 
-        records: List[Dict[str, str]] = []
+        records: list[dict[str, str]] = []
         if sources_csv and sources_csv.exists():
-            with open(sources_csv, "r", encoding="utf-8-sig", errors="ignore") as f:
+            with open(sources_csv, encoding="utf-8-sig", errors="ignore") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     title = (row.get("title") or row.get("Title") or "").strip()
@@ -393,7 +390,7 @@ class RawCrawler:
         else:
             records = [s for s in SEED_ENTRIES if s.get("category") != "thong_so_ky_thuat" or "vinfast" in s.get("url", "")]
 
-        crawled: List[Dict[str, Any]] = []
+        crawled: list[dict[str, Any]] = []
         for idx, item in enumerate(records, 1):
             title = item["title"]
             url = item["url"]
@@ -429,7 +426,7 @@ class RawCrawler:
 
         return crawled
 
-    def crawl_all(self, sources_csv: Optional[Path] = None) -> CrawlReport:
+    def crawl_all(self, sources_csv: Path | None = None) -> CrawlReport:
         """Executes all ingestion stages and returns summary report."""
         start_time = time.time()
         report = CrawlReport()
@@ -463,7 +460,7 @@ class RawCrawler:
 
         return report
 
-    def write_readme(self, report: Optional[CrawlReport] = None) -> Path:
+    def write_readme(self, report: CrawlReport | None = None) -> Path:
         """Generates dataset/bronze/README.md."""
         try:
             from ..storage.readme_generator import generate_bronze_readme

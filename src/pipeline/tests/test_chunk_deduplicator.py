@@ -3,7 +3,6 @@ Unit tests for ChunkDeduplicator.
 Tests exact deduplication, near-duplicate similarity, and provenance tracking.
 """
 
-import pytest
 from pipeline.filters.chunk_deduplicator import ChunkDeduplicator
 from pipeline.models.schemas import SilverChunk
 

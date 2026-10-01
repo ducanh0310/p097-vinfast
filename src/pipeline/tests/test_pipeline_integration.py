@@ -1,10 +1,9 @@
 """Integration tests for Bronze-to-Silver Pipeline."""
 
 import json
-from pathlib import Path
-import pytest
-from pipeline.config import PipelineConfig
+
 from pipeline.bronze_to_silver import BronzeToSilverPipeline
+from pipeline.config import PipelineConfig
 
 
 def test_pipeline_execution(tmp_path):
@@ -28,6 +27,6 @@ def test_pipeline_execution(tmp_path):
     assert (config.silver_dir / "silver_report.json").exists()
 
     # Verify report JSON content
-    with open(config.silver_dir / "silver_report.json", "r", encoding="utf-8") as f:
+    with open(config.silver_dir / "silver_report.json", encoding="utf-8") as f:
         report_data = json.load(f)
     assert report_data["total_faq_items"] == 400

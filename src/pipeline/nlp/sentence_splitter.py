@@ -5,7 +5,6 @@ decimals, and currencies without incorrectly splitting.
 """
 
 import re
-from typing import List
 
 
 class VietnameseSentenceSplitter:
@@ -24,7 +23,7 @@ class VietnameseSentenceSplitter:
             r"^(Điều|Khoản|Điểm|Mục|Chương)\s+\d+[\w.]*", re.IGNORECASE
         )
 
-    def split_sentences(self, text: str) -> List[str]:
+    def split_sentences(self, text: str) -> list[str]:
         """Split a Vietnamese text block into clean sentences."""
         if not text or not text.strip():
             return []
@@ -33,7 +32,7 @@ class VietnameseSentenceSplitter:
 
         # If text contains paragraphs or bullet points, first split by paragraphs
         raw_paragraphs = text.split("\n")
-        sentences: List[str] = []
+        sentences: list[str] = []
 
         for paragraph in raw_paragraphs:
             paragraph = paragraph.strip()
@@ -51,7 +50,7 @@ class VietnameseSentenceSplitter:
 
         return sentences
 
-    def _split_paragraph(self, paragraph: str) -> List[str]:
+    def _split_paragraph(self, paragraph: str) -> list[str]:
         """Split a single paragraph into sentences taking abbreviations into account."""
         length = len(paragraph)
         if length == 0:

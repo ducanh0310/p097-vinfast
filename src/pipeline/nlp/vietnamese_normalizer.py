@@ -9,7 +9,6 @@ Handles:
 
 import re
 import unicodedata
-from typing import Dict
 
 
 class VietnameseNormalizer:
@@ -17,7 +16,7 @@ class VietnameseNormalizer:
 
     # Map old-style tone placement to modern standard tone placement
     # Example: hoà -> hòa, thuỷ -> thủy, khoẻ -> khỏe, quĩ -> quỹ
-    OLD_TO_NEW_TONE_MAP: Dict[str, str] = {
+    OLD_TO_NEW_TONE_MAP: dict[str, str] = {
         # oa / oà / oá / oả / oã / oạ -> oà -> hòa
         "oà": "òa", "oá": "óa", "oả": "ỏa", "oã": "õa", "oạ": "ọa",
         "Oà": "Òa", "Oá": "Óa", "Oả": "Ỏa", "Oã": "Õa", "Oạ": "Ọa",

@@ -4,7 +4,7 @@ Ensures silver records meet high standards for RAG and search.
 """
 
 import re
-from typing import Tuple
+from typing import Any
 
 # All Vietnamese letters with diacritics (lower and upper)
 VIETNAMESE_DIACRITICS = set(
@@ -108,7 +108,7 @@ class VietnameseQualityScorer:
         diacritic_chars = [c for c in alpha_chars if c in VIETNAMESE_DIACRITICS]
         return len(diacritic_chars) / len(alpha_chars)
 
-    def evaluate(self, text: str, title: str = "") -> Tuple[float, Dict[str, any]]:
+    def evaluate(self, text: str, title: str = "") -> tuple[float, dict[str, Any]]:
         """
         Evaluate text quality for silver admission.
         Returns (quality_score [0.0 - 1.0], details_dict).

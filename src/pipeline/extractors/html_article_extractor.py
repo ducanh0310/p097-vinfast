@@ -5,13 +5,14 @@ Uses trafilatura with BeautifulSoup fallback.
 
 import json
 import logging
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator, Optional
-from bs4 import BeautifulSoup
-import trafilatura
 
-from .base import BaseExtractor
+import trafilatura
+from bs4 import BeautifulSoup
+
 from ..models.schemas import BronzeDocument
+from .base import BaseExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ class HTMLArticleExtractor(BaseExtractor):
             return
 
         try:
-            with open(manifest_path, "r", encoding="utf-8") as f:
+            with open(manifest_path, encoding="utf-8") as f:
                 entries = json.load(f)
         except Exception as e:
             logger.error("Failed to load manifest %s: %s", manifest_path, e)
@@ -75,7 +76,7 @@ class HTMLArticleExtractor(BaseExtractor):
                 continue
 
             try:
-                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                with open(file_path, encoding="utf-8", errors="ignore") as f:
                     html_content = f.read()
 
                 # Extract markdown using trafilatura

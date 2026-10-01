@@ -5,11 +5,13 @@ Transforms complex nested JSON into structured SilverVehicle records and knowled
 
 import json
 import logging
+from collections.abc import Generator
+from datetime import UTC
 from pathlib import Path
-from typing import Any, Dict, Generator, List
+from typing import Any
 
-from .base import BaseExtractor
 from ..models.schemas import BronzeDocument, SilverVehicle
+from .base import BaseExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +24,9 @@ class RelationalExtractor(BaseExtractor):
         self.snapshot_path = (
             self.bronze_dir / "vinfast" / "relational" / "vinfast_rolling_raw_snapshot.json"
         )
-        self._cached_vehicles: List[SilverVehicle] = []
+        self._cached_vehicles: list[SilverVehicle] = []
 
-    def get_structured_vehicles(self) -> List[SilverVehicle]:
+    def get_structured_vehicles(self) -> list[SilverVehicle]:
         """Returns structured vehicle records."""
         if not self._cached_vehicles:
             list(self.extract_all())
@@ -37,14 +39,13 @@ class RelationalExtractor(BaseExtractor):
             return
 
         try:
-            with open(self.snapshot_path, "r", encoding="utf-8") as f:
+            with open(self.snapshot_path, encoding="utf-8") as f:
                 data = json.load(f)
 
             vehicles_data = data.get("vehicles", {})
             objects_data = data.get("objects", {})
             provinces = objects_data.get("provinces", [])
             fees = objects_data.get("fees", [])
-            promotions_data = data.get("promotion", {}).get("records", [])
 
             self._cached_vehicles = []
             markdown_sections = ["# Bảng giá xe và chi phí lăn bánh VinFast toàn quốc\n"]
@@ -99,17 +100,17 @@ class RelationalExtractor(BaseExtractor):
 
     def _process_vehicle_model(
         self,
-        model_meta: Dict[str, Any],
-        vehicles_container: Dict[str, Any],
+        model_meta: dict[str, Any],
+        vehicles_container: dict[str, Any],
         vehicle_type: str,
-        fees: List[Dict[str, Any]],
+        fees: list[dict[str, Any]],
     ) -> SilverVehicle:
         model_id = model_meta.get("id", "")
         model_name = model_meta.get("name", "")
         detail = vehicles_container.get(model_id, {})
 
         editions = detail.get("listEdition", [])
-        trims: List[Dict[str, Any]] = []
+        trims: list[dict[str, Any]] = []
 
         for ed_code in editions:
             ed_data = detail.get(ed_code, {})
@@ -180,22 +181,22 @@ class RelationalExtractor(BaseExtractor):
             searchable_markdown=searchable_md,
         )
 
-    def get_relational_tables(self, cars_only: bool = False) -> Dict[str, List[Dict[str, Any]]]:
+    def get_relational_tables(self, cars_only: bool = False) -> dict[str, list[dict[str, Any]]]:
         """Extracts normalized relational tables for CSV export into rdb_schema."""
         if not self.snapshot_path.exists():
             return {}
 
-        with open(self.snapshot_path, "r", encoding="utf-8") as f:
+        with open(self.snapshot_path, encoding="utf-8") as f:
             data = json.load(f)
 
         import os
-        from datetime import datetime, timezone
-        mtime = datetime.fromtimestamp(os.path.getmtime(self.snapshot_path), tz=timezone.utc)
+        from datetime import datetime
+        mtime = datetime.fromtimestamp(os.path.getmtime(self.snapshot_path), tz=UTC)
         snapshot_dt = mtime.strftime("%Y-%m-%d %H:%M:%S UTC")
 
         # 1. Cars Catalog
-        cars_catalog: List[Dict[str, Any]] = []
-        model_name_map: Dict[str, str] = {}
+        cars_catalog: list[dict[str, Any]] = []
+        model_name_map: dict[str, str] = {}
         vehicles_data = data.get("vehicles", {})
 
         car_models = vehicles_data.get("cars", {}).get("models", [])
@@ -228,7 +229,7 @@ class RelationalExtractor(BaseExtractor):
                 })
 
         # 2. Trims Pricing
-        trims_pricing: List[Dict[str, Any]] = []
+        trims_pricing: list[dict[str, Any]] = []
         costs = data.get("objects", {}).get("costs", [])
         for c in costs:
             model_id = c.get("model", "")
@@ -261,7 +262,7 @@ class RelationalExtractor(BaseExtractor):
             })
 
         # 3. Provinces
-        provinces: List[Dict[str, Any]] = []
+        provinces: list[dict[str, Any]] = []
         raw_provinces = data.get("objects", {}).get("provinces", [])
         for p in raw_provinces:
             provinces.append({
@@ -272,7 +273,7 @@ class RelationalExtractor(BaseExtractor):
             })
 
         # 4. Fee Rules
-        fee_rules: List[Dict[str, Any]] = [
+        fee_rules: list[dict[str, Any]] = [
             {
                 "fee_code": "REGISTRATION_FEE",
                 "fee_name": "Lệ phí trước bạ ô tô điện",
@@ -333,7 +334,7 @@ class RelationalExtractor(BaseExtractor):
             {"id": "other", "name": "Các tỉnh thành khác (Khu vực II, III)", "plate_fee": 1000000},
         ]
 
-        rolling_matrix: List[Dict[str, Any]] = []
+        rolling_matrix: list[dict[str, Any]] = []
         for t in trims_pricing:
             price = t["price_vat_vnd"]
             if price <= 0:

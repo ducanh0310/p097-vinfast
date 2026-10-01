@@ -3,10 +3,8 @@ Unit tests for URL Discovery, Filters, and Raw Crawler logic.
 """
 
 from pathlib import Path
-import pytest
 
-from pipeline.crawlers.url_discoverer import UrlDiscoverer, SEED_ENTRIES
-from pipeline.crawlers.raw_crawler import RawCrawler
+from pipeline.crawlers.url_discoverer import UrlDiscoverer
 
 
 def test_url_discoverer_seeds():

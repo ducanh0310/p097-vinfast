@@ -2,11 +2,11 @@
 
 from .schemas import (
     BronzeDocument,
-    SilverDocument,
     SilverChunk,
+    SilverDocument,
     SilverFAQItem,
-    SilverVehicle,
     SilverReport,
+    SilverVehicle,
 )
 
 __all__ = [

@@ -3,10 +3,9 @@ Automated README.md generator for pipeline destination directories (Bronze, Silv
 Invoked automatically after each pipeline stage completes execution.
 """
 
-from datetime import datetime, timezone
-import json
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 def format_size(size_bytes: int) -> str:
@@ -24,7 +23,7 @@ def count_lines(file_path: Path) -> int:
     if not file_path.exists() or not file_path.is_file():
         return 0
     try:
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(file_path, encoding="utf-8", errors="ignore") as f:
             return sum(1 for _ in f)
     except Exception:
         return 0
@@ -41,14 +40,14 @@ def count_csv_rows(file_path: Path) -> int:
 # =========================================================================
 def generate_bronze_readme(
     bronze_dir: Path,
-    report: Optional[Any] = None,
-    pdf_dir: Optional[Path] = None,
+    report: Any | None = None,
+    pdf_dir: Path | None = None,
 ) -> Path:
     """Generates comprehensive dataset/bronze/README.md after crawl/ingestion."""
     bronze_dir = Path(bronze_dir)
     bronze_dir.mkdir(parents=True, exist_ok=True)
     readme_path = bronze_dir / "README.md"
-    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    now_str = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     # Inspect Relational snapshot
     rel_file = bronze_dir / "vinfast" / "relational" / "vinfast_rolling_raw_snapshot.json"
@@ -133,12 +132,12 @@ python -m src.pipeline crawl --mode faq
 # =========================================================================
 # 2. SILVER LAYER README GENERATOR
 # =========================================================================
-def generate_silver_readme(silver_dir: Path, report: Any, config: Optional[Any] = None) -> Path:
+def generate_silver_readme(silver_dir: Path, report: Any, config: Any | None = None) -> Path:
     """Generates comprehensive dataset/silver/README.md after Bronze -> Silver stage."""
     silver_dir = Path(silver_dir)
     silver_dir.mkdir(parents=True, exist_ok=True)
     readme_path = silver_dir / "README.md"
-    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    now_str = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     # File paths & sizes
     docs_file = silver_dir / "silver_documents.jsonl"
@@ -230,12 +229,12 @@ with open("dataset/silver/silver_chunks.jsonl", "r", encoding="utf-8") as f:
 # =========================================================================
 # 3. GOLD LAYER README GENERATOR
 # =========================================================================
-def generate_gold_readme(gold_dir: Path, report_dict: Dict[str, Any], config: Optional[Any] = None) -> Path:
+def generate_gold_readme(gold_dir: Path, report_dict: dict[str, Any], config: Any | None = None) -> Path:
     """Generates comprehensive dataset/gold/README.md after Silver -> Gold consultation filtering."""
     gold_dir = Path(gold_dir)
     gold_dir.mkdir(parents=True, exist_ok=True)
     readme_path = gold_dir / "README.md"
-    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    now_str = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     # File paths & sizes
     docs_file = gold_dir / "gold_documents.jsonl"

@@ -1,6 +1,5 @@
 """Unit tests for Vietnamese Sentence Splitter."""
 
-import pytest
 from pipeline.nlp.sentence_splitter import VietnameseSentenceSplitter
 
 

@@ -4,17 +4,17 @@ Performs exact text deduplication and near-duplicate filtering (Jaccard similari
 Preserves provenance and prioritizes chunks with the richest breadcrumb context.
 """
 
-from dataclasses import dataclass, field
 import hashlib
 import re
-from typing import Dict, List, Optional, Set, Tuple
+from dataclasses import dataclass
+
 from ..models.schemas import SilverChunk
 
 
 @dataclass
 class DeduplicationResult:
     """Statistics report of chunk deduplication."""
-    unique_chunks: List[SilverChunk]
+    unique_chunks: list[SilverChunk]
     exact_duplicates_count: int
     near_duplicates_count: int
     total_dropped: int
@@ -46,7 +46,7 @@ class ChunkDeduplicator:
         cleaned = re.sub(r"\s+", " ", cleaned.strip().lower())
         return cleaned
 
-    def get_shingles(self, text: str) -> Set[str]:
+    def get_shingles(self, text: str) -> set[str]:
         """Extracts k-word shingles for Jaccard similarity."""
         words = re.findall(r"\w+", text.lower())
         if len(words) < self.shingle_k:
@@ -54,7 +54,7 @@ class ChunkDeduplicator:
         return {" ".join(words[i : i + self.shingle_k]) for i in range(len(words) - self.shingle_k + 1)}
 
     @staticmethod
-    def jaccard_similarity(set_a: Set[str], set_b: Set[str]) -> float:
+    def jaccard_similarity(set_a: set[str], set_b: set[str]) -> float:
         """Computes Jaccard similarity between two shingle sets."""
         if not set_a or not set_b:
             return 0.0
@@ -62,7 +62,7 @@ class ChunkDeduplicator:
         union = len(set_a | set_b)
         return intersection / union if union > 0 else 0.0
 
-    def deduplicate(self, chunks: List[SilverChunk]) -> DeduplicationResult:
+    def deduplicate(self, chunks: list[SilverChunk]) -> DeduplicationResult:
         """
         Executes exact and near-duplicate filtering.
         Prioritizes keeping the chunk with the most specific heading context and highest consultation score.
@@ -73,7 +73,7 @@ class ChunkDeduplicator:
         # -------------------------------------------------------------
         # Phase 1: Exact Duplicate Detection (SHA-256 on normalized text)
         # -------------------------------------------------------------
-        exact_seen: Dict[str, SilverChunk] = {}
+        exact_seen: dict[str, SilverChunk] = {}
         exact_duplicates_dropped = 0
 
         if self.enable_exact:
@@ -120,7 +120,7 @@ class ChunkDeduplicator:
         # -------------------------------------------------------------
         # Phase 2: Near-Duplicate Detection (Jaccard on shingles per topic)
         # -------------------------------------------------------------
-        final_unique: List[SilverChunk] = []
+        final_unique: list[SilverChunk] = []
         near_duplicates_dropped = 0
 
         if self.enable_near and len(candidates_after_exact) > 1:
@@ -138,7 +138,7 @@ class ChunkDeduplicator:
                     shingles = self.get_shingles(norm)
                     shingle_map.append((chunk, norm, shingles))
 
-                kept_in_topic: List[Tuple[SilverChunk, str, Set[str]]] = []
+                kept_in_topic: list[tuple[SilverChunk, str, set[str]]] = []
 
                 for chunk, norm, shingles in shingle_map:
                     is_near_dup = False

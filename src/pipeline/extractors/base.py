@@ -3,8 +3,8 @@ Base extractor interface.
 """
 
 from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Generator, List, Union
+from collections.abc import Generator
+
 from ..models.schemas import BronzeDocument
 
 

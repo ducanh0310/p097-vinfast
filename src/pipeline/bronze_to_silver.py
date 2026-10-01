@@ -4,15 +4,15 @@ Handles multi-source ingestion, Vietnamese NLP normalization, quality assurance,
 deduplication, hierarchical chunking, and silver storage.
 """
 
-from collections import Counter
-from datetime import datetime, timezone
 import hashlib
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from collections import Counter
+from datetime import UTC, datetime
+from typing import Any
 
 from .chunking.hierarchical_chunker import HierarchicalChunker
-from .config import PipelineConfig, DEFAULT_CONFIG
+from .config import DEFAULT_CONFIG, PipelineConfig
 from .extractors.faq_extractor import FAQExtractor
 from .extractors.html_article_extractor import HTMLArticleExtractor
 from .extractors.pdf_extractor import PDFExtractor
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 class BronzeToSilverPipeline:
     """End-to-end data pipeline transforming raw bronze data into standardized silver datasets."""
 
-    def __init__(self, config: Optional[PipelineConfig] = None):
+    def __init__(self, config: PipelineConfig | None = None):
         self.config = config or DEFAULT_CONFIG
         self.normalizer = VietnameseNormalizer()
         self.quality_scorer = VietnameseQualityScorer(
@@ -52,7 +52,7 @@ class BronzeToSilverPipeline:
     def run(self) -> SilverReport:
         """Executes the full Bronze-to-Silver transformation."""
         start_time = time.time()
-        start_iso = datetime.now(timezone.utc).isoformat()
+        start_iso = datetime.now(UTC).isoformat()
         logger.info("Starting Bronze-to-Silver Pipeline execution...")
 
         # 1. Initialize Extractors
@@ -62,19 +62,19 @@ class BronzeToSilverPipeline:
         pdf_extractor = PDFExtractor(pdf_dir=self.config.pdf_dir)
 
         # 2. Extract Bronze Documents
-        raw_documents: List[BronzeDocument] = []
+        raw_documents: list[BronzeDocument] = []
 
         logger.info("Extracting HTML articles...")
         raw_documents.extend(list(html_extractor.extract_all()))
 
         logger.info("Extracting FAQ accordions...")
         raw_documents.extend(list(faq_extractor.extract_all()))
-        faq_items: List[SilverFAQItem] = faq_extractor.get_structured_faq_items()
+        faq_items: list[SilverFAQItem] = faq_extractor.get_structured_faq_items()
 
         logger.info("Extracting Relational pricing snapshot...")
         raw_documents.extend(list(relational_extractor.extract_all()))
-        vehicles: List[SilverVehicle] = relational_extractor.get_structured_vehicles()
-        relational_tables: Dict[str, List[Dict[str, Any]]] = relational_extractor.get_relational_tables(cars_only=False)
+        vehicles: list[SilverVehicle] = relational_extractor.get_structured_vehicles()
+        relational_tables: dict[str, list[dict[str, Any]]] = relational_extractor.get_relational_tables(cars_only=False)
 
         logger.info("Extracting PDF documents...")
         raw_documents.extend(list(pdf_extractor.extract_all()))
@@ -83,8 +83,8 @@ class BronzeToSilverPipeline:
         logger.info("Extracted %d raw Bronze documents in total", total_bronze_records)
 
         # 3. Process, Normalize, Quality Score, and Deduplicate Documents
-        silver_documents: List[SilverDocument] = []
-        silver_chunks: List[SilverChunk] = []
+        silver_documents: list[SilverDocument] = []
+        silver_chunks: list[SilverChunk] = []
         seen_hashes = set()
         duplicates_count = 0
         low_quality_count = 0
@@ -164,7 +164,7 @@ class BronzeToSilverPipeline:
             silver_chunks.extend(doc_chunks)
 
         # 5. Normalize FAQ items and Vehicles
-        normalized_faq_items: List[SilverFAQItem] = []
+        normalized_faq_items: list[SilverFAQItem] = []
         for item in faq_items:
             norm_q = self.normalizer.normalize(item.question)
             norm_a = self.normalizer.normalize(item.answer)
@@ -174,7 +174,7 @@ class BronzeToSilverPipeline:
             item.answer_markdown = norm_a_md
             normalized_faq_items.append(item)
 
-        normalized_vehicles: List[SilverVehicle] = []
+        normalized_vehicles: list[SilverVehicle] = []
         for v in vehicles:
             v.searchable_markdown = self.normalizer.normalize(v.searchable_markdown)
             normalized_vehicles.append(v)
@@ -199,7 +199,7 @@ class BronzeToSilverPipeline:
         report = SilverReport(
             pipeline_version="1.0.0",
             started_at=start_iso,
-            completed_at=datetime.now(timezone.utc).isoformat(),
+            completed_at=datetime.now(UTC).isoformat(),
             elapsed_seconds=elapsed,
             total_bronze_records=total_bronze_records,
             total_silver_documents=len(silver_documents),
