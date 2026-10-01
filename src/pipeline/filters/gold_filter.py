@@ -123,21 +123,48 @@ class GoldConsultationFilter:
             if excl in title_lower:
                 return False, None, 0.0, f"Excluded legal document: {top_doc}"
 
-        # 2. Negative Traffic Conduct Section Check
+        # 2. Negative Motorbike / 2-wheeler Check (domain is electric cars only)
+        heading_text = " > ".join(heading_path).lower()
+        motorbike_heading_kws = [
+            "xe máy điện", "xe máy", "scooter", "xe 2 bánh", "xe hai bánh",
+            "evo200", "evo grand", "evo-200", "feliz", "klara", "vento", "theon",
+            "vero x", "zgoo", "drgnfly", "flazz", "motio"
+        ]
+        if any(kw in heading_text for kw in motorbike_heading_kws):
+            return False, None, 0.0, "Motorbike content outside electric car consultation scope"
+
+        if chunk.category == "xe_may_dien" or chunk.metadata.get("vehicle_type") == "bike":
+            return False, None, 0.0, "Motorbike content outside electric car consultation scope"
+
+        # Check for pure motorbike content (contains motorbike keywords but zero car/automotive keywords)
+        motorbike_content_kws = [
+            "xe máy điện", "xe máy", "scooter", "xe đạp điện", "e-bike",
+            "evo200", "evo grand", "feliz", "klara", "vento", "theon",
+            "drgnfly", "flazz", "zgoo", "học sinh, sinh viên"
+        ]
+        car_presence_kws = [
+            "ô tô", "vf 3", "vf 5", "vf 6", "vf 7", "vf 8", "vf 9",
+            "ec van", "herio", "limo", "minio", "vf mpv", "vf wild",
+            "xe hơi", "bốn bánh", "4 bánh", "suv", "sedan"
+        ]
+        if any(mb in content for mb in motorbike_content_kws) and not any(car in content for car in car_presence_kws):
+            return False, None, 0.0, "Pure motorbike content outside electric car consultation scope"
+
+        # 3. Negative Traffic Conduct Section Check
         if IRRELEVANT_TRAFFIC_RULES_REGEX.search(content):
             return False, None, 0.0, "Irrelevant traffic driving rule or penalty"
 
-        # 3. Insurance Document (Nghi Dinh 67) Special Check
+        # 4. Insurance Document (Nghi Dinh 67) Special Check
         if "nghi dinh 67 2023" in title_lower:
             has_buyer_relevance = any(kw in content for kw in INSURANCE_BUYING_KEYWORDS)
             if not has_buyer_relevance:
                 return False, None, 0.0, "Insurance enterprise bureaucracy (non-vehicle buyer relevance)"
 
-        # 4. Check for pure noise
+        # 5. Check for pure noise
         if "about: blank" in content and len(content.strip()) < 100:
             return False, None, 0.0, "Empty browser print noise"
 
-        # 5. Check positive consultation relevance
+        # 6. Check positive consultation relevance
         topic_scores = {}
         for topic, kws in TOPIC_TAXONOMY.items():
             matches = sum(1 for kw in kws if kw in content)
@@ -168,6 +195,9 @@ class GoldConsultationFilter:
         for excl in EXCLUDED_DOCUMENT_PREFIXES:
             if excl in title_lower or excl.replace(" ", "_") in source_id:
                 return False, None, 0.0, f"Excluded legal document: {doc.title}"
+
+        if "xe máy điện" in title_lower or "xe máy" in title_lower or "xe_may_dien" in doc.category.lower():
+            return False, None, 0.0, "Motorbike document outside electric car consultation scope"
 
         # Core categories always admitted
         if doc.category in ["chinh_sach_uu_dai", "gia_xe_va_chi_phi_lan_banh", "thong_so_ky_thuat", "faq", "trai_nghiem_danh_gia", "tai_chinh_tra_gop"]:

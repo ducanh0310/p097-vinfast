@@ -125,21 +125,28 @@ class SilverToGoldPipeline:
 
         logger.info("Admitted %d Gold documents", len(gold_documents))
 
-        # 4. Load FAQ items (100% relevant to customer consultation)
+        # 4. Load FAQ items (Filter out motorbike FAQs, retain electric car FAQs)
         gold_faq: list[SilverFAQItem] = []
         if faq_file.exists():
             with open(faq_file, encoding="utf-8") as f:
                 for line in f:
                     if line.strip():
-                        gold_faq.append(SilverFAQItem(**json.loads(line)))
+                        item = SilverFAQItem(**json.loads(line))
+                        if item.category == "Xe máy điện":
+                            continue
+                        if any(mb in item.subcategory.lower() for mb in ["evo", "feliz", "klara", "theon", "vento", "vero", "zgoo", "xe máy"]):
+                            continue
+                        gold_faq.append(item)
 
-        # 5. Load Vehicles (100% relevant to pricing & quotes)
+        # 5. Load Vehicles (100% electric cars only)
         gold_vehicles: list[SilverVehicle] = []
         if vehicles_file.exists():
             with open(vehicles_file, encoding="utf-8") as f:
                 for line in f:
                     if line.strip():
-                        gold_vehicles.append(SilverVehicle(**json.loads(line)))
+                        veh = SilverVehicle(**json.loads(line))
+                        if veh.vehicle_type == "car":
+                            gold_vehicles.append(veh)
 
         # 6. Persist Gold Datasets
         self.writer.write_chunks(gold_chunks)

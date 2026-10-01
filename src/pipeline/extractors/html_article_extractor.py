@@ -53,17 +53,26 @@ class HTMLArticleExtractor(BaseExtractor):
         default_category: str,
         default_domain: str,
     ) -> Generator[BronzeDocument, None, None]:
-        """Parse files recorded in a manifest JSON."""
-        if not manifest_path.exists() or not articles_dir.exists():
-            logger.warning("Manifest or directory missing: %s", manifest_path)
+        if not articles_dir.exists():
             return
 
-        try:
-            with open(manifest_path, encoding="utf-8") as f:
-                entries = json.load(f)
-        except Exception as e:
-            logger.error("Failed to load manifest %s: %s", manifest_path, e)
-            return
+        entries: list[dict] = []
+        if manifest_path.exists():
+            try:
+                with open(manifest_path, encoding="utf-8") as f:
+                    entries = json.load(f)
+            except Exception as e:
+                logger.error("Failed to load manifest %s: %s", manifest_path, e)
+                return
+        else:
+            # Fallback: discover HTML files in directory directly
+            for html_file in sorted(articles_dir.glob("*.html")):
+                entries.append({
+                    "file": html_file.name,
+                    "title": html_file.stem.replace("_", " ").title(),
+                    "category": default_category,
+                    "domain": default_domain,
+                })
 
         for item in entries:
             file_name = item.get("file")

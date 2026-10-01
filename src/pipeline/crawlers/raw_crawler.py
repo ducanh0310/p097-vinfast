@@ -419,10 +419,68 @@ class RawCrawler:
                 if html and len(html) > 300:
                     with open(dest_file, "w", encoding="utf-8") as f:
                         f.write(html)
-                    crawled.append({"title": title, "url": url, "file": dest_file.name, "category": category})
+                    crawled.append({
+                        "title": title,
+                        "url": url,
+                        "file": dest_file.name,
+                        "category": category,
+                        "domain": domain,
+                        "bytes": len(html),
+                        "is_vinfast": is_vinfast,
+                    })
                     time.sleep(0.3)
             else:
-                crawled.append({"title": title, "url": url, "file": dest_file.name, "category": category})
+                crawled.append({
+                    "title": title,
+                    "url": url,
+                    "file": dest_file.name,
+                    "category": category,
+                    "domain": domain,
+                    "bytes": dest_file.stat().st_size,
+                    "is_vinfast": is_vinfast,
+                })
+
+        # Persist Web Scraping Manifest
+        web_manifest_file = self.webscraping_dir / "web_scraping_manifest.json"
+        web_entries: list[dict[str, Any]] = []
+        for item in crawled:
+            if not item.get("is_vinfast", False):
+                web_entries.append({
+                    "title": item["title"],
+                    "url": item["url"],
+                    "category": item["category"],
+                    "domain": item["domain"],
+                    "file": item["file"],
+                    "bytes": item.get("bytes", 0),
+                    "crawled_at": datetime.now(UTC).isoformat(),
+                })
+        with open(web_manifest_file, "w", encoding="utf-8") as f:
+            json.dump(web_entries, f, ensure_ascii=False, indent=2)
+
+        # Update VinFast Sources Manifest
+        vinfast_manifest_file = self.vinfast_dir / "vinfast_sources_manifest.json"
+        existing_vinfast = []
+        if vinfast_manifest_file.exists():
+            try:
+                with open(vinfast_manifest_file, encoding="utf-8") as f:
+                    existing_vinfast = json.load(f)
+            except Exception:
+                existing_vinfast = []
+        seen_files = {e.get("file") for e in existing_vinfast}
+        for item in crawled:
+            if item.get("is_vinfast", False) and item["file"] not in seen_files:
+                existing_vinfast.append({
+                    "title": item["title"],
+                    "url": item["url"],
+                    "category": item["category"],
+                    "domain": item["domain"],
+                    "file": item["file"],
+                    "bytes": item.get("bytes", 0),
+                    "crawled_at": datetime.now(UTC).isoformat(),
+                })
+                seen_files.add(item["file"])
+        with open(vinfast_manifest_file, "w", encoding="utf-8") as f:
+            json.dump(existing_vinfast, f, ensure_ascii=False, indent=2)
 
         return crawled
 

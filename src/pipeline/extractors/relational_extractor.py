@@ -64,20 +64,6 @@ class RelationalExtractor(BaseExtractor):
                     self._cached_vehicles.append(v)
                     markdown_sections.append(v.searchable_markdown)
 
-            # 2. Process Bikes
-            bikes = vehicles_data.get("bikes", {})
-            bike_models = bikes.get("models", [])
-            for m in bike_models:
-                v = self._process_vehicle_model(
-                    model_meta=m,
-                    vehicles_container=bikes,
-                    vehicle_type="bike",
-                    fees=fees,
-                )
-                if v:
-                    self._cached_vehicles.append(v)
-                    markdown_sections.append(v.searchable_markdown)
-
             full_markdown = "\n\n".join(markdown_sections)
 
             yield BronzeDocument(

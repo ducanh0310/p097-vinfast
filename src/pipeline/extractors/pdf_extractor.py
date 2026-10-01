@@ -25,6 +25,12 @@ class PDFExtractor(BaseExtractor):
         self.pdf_dir = Path(pdf_dir)
         self.manifest_path = self.pdf_dir / "pdf_manifest.json"
 
+        # Suppress benign MuPDF C-level syntax warnings (e.g. missing shading colorspace)
+        try:
+            pymupdf.TOOLS.mupdf_display_errors(False)
+        except Exception:
+            pass
+
         # Regex for page numbering noise: 'Trang 1 / 10', 'Page 2 of 5', '- 3 -'
         self.page_number_regex = re.compile(
             r"^(Trang\s+\d+(\s*/\s*\d+)?|Page\s+\d+(\s*of\s*\d+)?|-\s*\d+\s*-|\d+/\d+)$",
@@ -90,49 +96,53 @@ class PDFExtractor(BaseExtractor):
 
     def _extract_pdf_content(self, file_path: Path, doc_title: str) -> str | None:
         """Extracts text page-by-page, strips page numbers, and structures markdown headings."""
-        doc = pymupdf.open(str(file_path))
-        num_pages = len(doc)
-        if num_pages == 0:
-            return None
+        try:
+            with pymupdf.open(str(file_path)) as doc:
+                num_pages = len(doc)
+                if num_pages == 0:
+                    return None
 
-        markdown_lines = []
-        if doc_title:
-            markdown_lines.append(f"# {doc_title}\n")
+                markdown_lines = []
+                if doc_title:
+                    markdown_lines.append(f"# {doc_title}\n")
 
-        for page_idx in range(num_pages):
-            page = doc[page_idx]
-            page_text = page.get_text("text")
-            if not page_text or not page_text.strip():
-                continue
-
-            lines = page_text.split("\n")
-            for line in lines:
-                stripped = line.strip()
-                if not stripped:
-                    continue
-
-                # Filter out pure page numbers
-                if self.page_number_regex.match(stripped):
-                    continue
-
-                # Strip or filter browser print noise
-                if self.print_noise_regex.search(stripped):
-                    stripped = self.print_noise_regex.sub("", stripped).strip()
-                    if not stripped:
+                for page_idx in range(num_pages):
+                    page = doc[page_idx]
+                    page_text = page.get_text("text")
+                    if not page_text or not page_text.strip():
                         continue
 
-                # Format legal chapters as ## Chương ...
-                if self.chapter_regex.match(stripped):
-                    markdown_lines.append(f"\n## {stripped}\n")
-                    continue
+                    lines = page_text.split("\n")
+                    for line in lines:
+                        stripped = line.strip()
+                        if not stripped:
+                            continue
 
-                # Format legal articles as ### Điều ...
-                if self.article_regex.match(stripped):
-                    markdown_lines.append(f"\n### {stripped}\n")
-                    continue
+                        # Filter out pure page numbers
+                        if self.page_number_regex.match(stripped):
+                            continue
 
-                markdown_lines.append(stripped)
+                        # Strip or filter browser print noise
+                        if self.print_noise_regex.search(stripped):
+                            stripped = self.print_noise_regex.sub("", stripped).strip()
+                            if not stripped:
+                                continue
 
-            markdown_lines.append("")  # Page boundary separator
+                        # Format legal chapters as ## Chương ...
+                        if self.chapter_regex.match(stripped):
+                            markdown_lines.append(f"\n## {stripped}\n")
+                            continue
 
-        return "\n".join(markdown_lines).strip()
+                        # Format legal articles as ### Điều ...
+                        if self.article_regex.match(stripped):
+                            markdown_lines.append(f"\n### {stripped}\n")
+                            continue
+
+                        markdown_lines.append(stripped)
+
+                    markdown_lines.append("")  # Page boundary separator
+
+                return "\n".join(markdown_lines).strip()
+        except Exception as e:
+            logger.error("Failed parsing PDF content from %s: %s", file_path, e)
+            return None
