@@ -93,9 +93,18 @@ Truy cập Swagger UI API Documentation tại: `http://localhost:8000/docs`
 │   │   └── routes.py    # Endpoint definitions (/chat, /status, /configurate)
 │   ├── models/          # Pydantic data schemas
 │   │   └── schemas.py   # Request/Response models
+│   ├── pipeline/        # Vietnamese Pre-RAG Data Pipeline (Bronze -> Silver -> Gold)
+│   │   ├── crawlers/    # Web & API crawlers (Live Pricing API, FAQ, Promos, PDFs)
+│   │   ├── extractors/  # Extractors (HTML, FAQ, Relational API, PDF)
+│   │   ├── nlp/         # Vietnamese text normalizer & sentence splitter
+│   │   ├── chunking/    # Hierarchical chunker with breadcrumb context
+│   │   ├── filters/     # Gold consultation filter & chunk deduplicators
+│   │   ├── storage/     # Data persistence writers & automated report generators
+│   │   └── README.md    # Chi tiết kiến trúc & hướng dẫn Data Pipeline
 │   ├── services/        # Business logic (LLM client, pricing engine, RAG)
 │   ├── config.py        # Environment settings
 │   └── main.py          # FastAPI application entry point
+├── dataset/             # Dữ liệu phân tầng Medallion (Bronze, Silver, Gold, PDF)
 ├── tests/               # Pytest suite (unit & integration tests)
 ├── docs/                # Project documentation & architecture diagrams
 ├── eval/                # Evaluation evidence & test suite results
