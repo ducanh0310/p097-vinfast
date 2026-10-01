@@ -160,6 +160,7 @@ class BronzeToSilverPipeline:
                 category=silver_doc.category,
                 source_type=silver_doc.source_type,
                 url=silver_doc.url,
+                doc_title=clean_title,
             )
             silver_chunks.extend(doc_chunks)
 

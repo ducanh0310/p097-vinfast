@@ -104,6 +104,14 @@ class VietnameseNormalizer:
         # Collapse horizontal whitespace
         text = self._multi_spaces.sub(" ", text)
 
+        # Collapse anomalous identical consecutive word repetitions (e.g. 'Có Có Có Có' -> 'Có', '2 2 2 2' -> '2')
+        # Only collapse when word is repeated 3 or more times consecutively
+        text = re.sub(r"\b(\w+)(?:\s+\1){2,}\b", r"\1", text, flags=re.IGNORECASE)
+
+        # Remove orphaned sequences of 3+ detached boolean/status tokens from broken PDF matrix layers
+        # (e.g. 'Có Có Không Có Có 11 2 2 2 2 1' -> clean)
+        text = re.sub(r"(?:\b(?:Có|Không|co|khong|opt|n/a|\d{1,2})\b[\s,;]*){3,}", " ", text, flags=re.IGNORECASE)
+
         # Clean trailing whitespace per line
         lines = [line.strip() for line in text.split("\n")]
         text = "\n".join(lines)

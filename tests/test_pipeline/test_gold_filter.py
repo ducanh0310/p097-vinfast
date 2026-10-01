@@ -62,3 +62,43 @@ def test_car_pricing_and_promotions_admitted():
     assert admitted is True
     assert topic in ["bao_gia_chi_phi", "chinh_sach_uu_dai"]
     assert score >= 0.8
+
+
+def test_non_automotive_assets_filtered_out():
+    gold_filter = GoldConsultationFilter()
+    # Aircraft / aviation chunk
+    chunk_aircraft = SilverChunk(
+        chunk_id="test_aircraft",
+        doc_id="doc_4",
+        chunk_index=0,
+        heading_path=["Thong Tu 13 2022 Tt Btc Huong Dan Le Phi Truoc Ba", "Điều 5. Miễn lệ phí trước bạ"],
+        heading_context="Thong Tu 13 2022 Tt Btc > Điều 5. Miễn lệ phí trước bạ",
+        content="Tàu bay sử dụng cho mục đích kinh doanh vận chuyển hàng hóa, hành khách được miễn nộp lệ phí trước bạ của tổ chức được cấp giấy phép kinh doanh vận chuyển hàng không.",
+        raw_chunk_text="Tàu bay sử dụng cho mục đích kinh doanh...",
+        token_estimate=45,
+        char_count=210,
+        category="thu_tuc_phap_ly",
+        source_type="pdf",
+    )
+    admitted_air, _, _, reason_air = gold_filter.evaluate_chunk(chunk_aircraft)
+    assert admitted_air is False
+    assert "Non-automotive asset" in reason_air
+
+    # Inland waterway / ship chunk
+    chunk_ship = SilverChunk(
+        chunk_id="test_ship",
+        doc_id="doc_5",
+        chunk_index=0,
+        heading_path=["Nghi Dinh 10 2022 Nd Cp Le Phi Truoc Ba", "Điều 10. Miễn lệ phí trước bạ"],
+        heading_context="Nghi Dinh 10 2022 > Điều 10. Miễn lệ phí trước bạ",
+        content="Tàu thủy, thuyền không có động cơ, trọng tải toàn phần đến 15 tấn hoạt động trong lĩnh vực giao thông đường thủy nội địa được miễn nộp lệ phí trước bạ.",
+        raw_chunk_text="Tàu thủy, thuyền không có động cơ...",
+        token_estimate=40,
+        char_count=190,
+        category="thu_tuc_phap_ly",
+        source_type="pdf",
+    )
+    admitted_ship, _, _, reason_ship = gold_filter.evaluate_chunk(chunk_ship)
+    assert admitted_ship is False
+    assert "Non-automotive asset" in reason_ship
+
