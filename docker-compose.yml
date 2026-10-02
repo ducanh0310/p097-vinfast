@@ -1,16 +1,41 @@
-version: "3.8"
-
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vinfast_postgres
+    environment:
+      POSTGRES_DB: vinfast_ai
+      POSTGRES_USER: vinfast
+      POSTGRES_PASSWORD: vinfast123
+    volumes:
+      - vinfast_pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vinfast -d vinfast_ai"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: vinfast_redis
+    ports:
+      - "6379:6379"
+
   backend:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: vinfast_backend
     ports:
       - "8000:8000"
     env_file:
       - .env
     volumes:
       - ./data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -22,6 +47,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    container_name: vinfast_frontend
     ports:
       - "3000:3000"
     environment:
@@ -29,3 +55,6 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+
+volumes:
+  vinfast_pg_data:
