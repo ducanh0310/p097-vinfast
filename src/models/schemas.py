@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Any
 from datetime import datetime
 from uuid import UUID
@@ -6,12 +6,14 @@ from uuid import UUID
 
 # ── Chat ─────────────────────────────────────────────────────
 class ChatRequest(BaseModel):
-    message: str
+    message: str = Field(..., min_length=1, max_length=5000)
     session_id: Optional[str] = None
+    vehicle_context: Optional[dict[str, Any]] = None
 
 class ChatResponse(BaseModel):
     response: str
     analysis: Optional[str] = None
+    session_id: Optional[str] = None
 
 
 # ── Auth ─────────────────────────────────────────────────────

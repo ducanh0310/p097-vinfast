@@ -85,7 +85,8 @@ source .venv/bin/activate
 
 # Cấu hình biến môi trường
 cp .env.example .env
-# Mở file .env và điền OPENAI_API_KEY (và AI_LOG_API_KEY) của bạn
+# Điền OPENAI_API_KEY hoặc GOOGLE_API_KEY (Gemini), cùng AI_LOG_API_KEY
+# LLM_PROVIDER=auto tự chọn OpenAI nếu có key thật, nếu không sẽ dùng Gemini
 # Đảm bảo CORS_ORIGINS có http://localhost:3000
 
 # Cài đặt dependencies
@@ -218,9 +219,11 @@ Luồng chat:
 ```text
 User nhập → frontend /api/chat
           → POST http://localhost:8000/api/v1/chat   body: { "message": "..." }
-          ← { "response": "...", "analysis": "..." }
-          → proxy chuyển thành SSE, chữ hiện dần trong bubble chat
+          ← JSON { "response": "...", "session_id": "..." }
+          → proxy chuyển JSON về chat panel
 ```
+
+Agent dùng tool có cấu trúc cho giá/phí/khuyến mãi và vector retrieval cho kiến thức tư vấn. RAG nạp vectors có sẵn từ `dataset/gold/vinfast_embeddings.jsonl` (model `text-embedding-3-small`, 1536 chiều), không tạo lại embedding corpus; mỗi truy vấn RAG gọi OpenAI Embeddings để vector hóa câu hỏi rồi xếp hạng cosine. Vì vậy cần `OPENAI_API_KEY` khi dùng RAG, kể cả khi chat model được chọn là Gemini.
 
 ### Phần đang dùng mock (chưa nối API thật)
 

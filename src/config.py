@@ -21,9 +21,12 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000"
 
     # LLM
+    llm_provider: Literal["auto", "openai", "google"] = "auto"
     openai_api_key: str = ""
+    google_api_key: str = ""
     model_name: str = "gpt-4o-mini"
-    llm_temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    google_model_name: str = "gemini-3.8-flash"
+    llm_temperature: float = Field(default=0.0, ge=0.0, le=2.0)
 
     # Database
     database_url: str = "sqlite:///./data/app.db"

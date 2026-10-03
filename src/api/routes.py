@@ -1,24 +1,37 @@
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
-from datetime import datetime
-from src.db import get_db
-from src.orm_models import (
-    Lead, Quote, Promotion, Inventory,
-    VehiclePrice, BatteryPrice, Accessory, RollingCost,
-    LeadStatus, QuoteStatus,
-)
-from src.models.schemas import (
-    ChatRequest, ChatResponse,
-    ConfigRequest, PricingResponse,
-    LeadCreate, LeadUpdate, LeadOut,
-    QuoteCreate, QuoteApprove, QuoteOut,
-    PromotionCreate, PromotionOut,
-    InventoryUpdate, InventoryOut,
-)
-from src.agents.graph import agent
-from decimal import Decimal
+import asyncio
 import uuid
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException
+from langchain_core.messages import HumanMessage
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.agents.graph import agent
+from src.db import get_db
+from src.models.schemas import (
+    ChatRequest,
+    ChatResponse,
+    ConfigRequest,
+    InventoryUpdate,
+    LeadCreate,
+    LeadUpdate,
+    PricingResponse,
+    PromotionCreate,
+    QuoteApprove,
+    QuoteCreate,
+)
+from src.orm_models import (
+    Accessory,
+    BatteryPrice,
+    Inventory,
+    Lead,
+    Promotion,
+    Quote,
+    QuoteStatus,
+    RollingCost,
+    VehiclePrice,
+)
 
 router = APIRouter()
 
@@ -30,11 +43,20 @@ PRICE_VERSION = "2025-Q4-v1"
 # ════════════════════════════════════════════════════════════
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest) -> ChatResponse:
+    session_id = request.session_id or str(uuid.uuid4())
     try:
-        result = await agent.ainvoke({"query": request.message})
+        result = await asyncio.to_thread(
+            agent.invoke,
+            {
+                "question": request.message,
+                "messages": [HumanMessage(content=request.message)],
+                "vehicle_context": request.vehicle_context or {},
+            },
+            {"configurable": {"thread_id": session_id}},
+        )
         return ChatResponse(
-            response=result.get("response", ""),
-            analysis=result.get("analysis", ""),
+            response=result.get("answer") or result.get("response", ""),
+            session_id=session_id,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

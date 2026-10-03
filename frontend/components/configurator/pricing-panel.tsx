@@ -8,9 +8,10 @@ import Image from "next/image";
 
 interface Props {
   configurator: ReturnType<typeof useConfigurator>;
+  onRequestQuote: () => void;
 }
 
-export function PricingPanel({ configurator }: Props) {
+export function PricingPanel({ configurator, onRequestQuote }: Props) {
   const { config, pricing } = configurator;
   const vehicle = VEHICLES[config.model];
 
@@ -167,7 +168,7 @@ export function PricingPanel({ configurator }: Props) {
         <button className="flex-1 py-3 rounded-xl border border-blue-600 text-blue-600 font-medium text-sm hover:bg-blue-50 transition-colors">
           📄 Xuất PDF báo giá
         </button>
-        <button className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors">
+        <button onClick={onRequestQuote} className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors">
           ✅ Yêu cầu báo giá chính thức
         </button>
       </div>

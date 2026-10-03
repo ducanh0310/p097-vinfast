@@ -19,10 +19,18 @@ export default function ConfiguratorPage() {
   const vehicle = VEHICLES[config.model];
 
   const carConfigText = `${vehicle.label} ${pricing.version.label} · ${pricing.color.label} · ${pricing.province.label}`;
+  const selectedVehicleContext = {
+    model: vehicle.label,
+    version: pricing.version.label,
+    color: pricing.color.label,
+    province: pricing.province.label,
+    battery: config.battery,
+    accessories: pricing.accList.map((accessory) => accessory.label),
+  };
 
   const handleAskAI = () => {
-    const msg = `Tôi đang xem: ${carConfigText}. Giá lăn bánh ~${new Intl.NumberFormat("vi-VN").format(pricing.finalPrice)}đ. Bạn tư vấn thêm được không?`;
-    chat.sendWithContext(msg);
+    const msg = `Tôi đang xem cấu hình ${carConfigText}. Bạn tư vấn thêm giúp tôi nhé.`;
+    chat.sendWithContext(msg, selectedVehicleContext);
   };
 
   return (

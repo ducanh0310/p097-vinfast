@@ -19,9 +19,8 @@ export async function POST(req: NextRequest) {
 
   return new Response(res.body, {
     headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
+      "Content-Type": res.headers.get("content-type") ?? "application/json",
+      "Cache-Control": "no-store",
     },
   });
 }
