@@ -1,79 +1,31 @@
-"use client";
+import Link from "next/link";
+import { CarImage } from "@/components/shared/car-image";
+import { SiteNav } from "@/components/shared/site-nav";
+import { Stepper } from "@/components/configurator/stepper";
+import { VEHICLES, VehicleKey } from "@/lib/vehicle-data";
+import { formatNumber } from "@/lib/format";
 
-import { useState } from "react";
-import { useConfigurator } from "@/hooks/use-configurator";
-import { useChat } from "@/hooks/use-chat";
-import { SelectorPanel } from "@/components/configurator/selector-panel";
-import { PricingPanel } from "@/components/configurator/pricing-panel";
-import { ChatPanel } from "@/components/configurator/chat-panel";
-import { Header } from "@/components/shared/header";
-import { BuyerIdentityModal } from "@/components/shared/buyer-identity-modal";
-import { VEHICLES } from "@/lib/vehicle-data";
-
-export default function ConfiguratorPage() {
-  const configurator = useConfigurator();
-  const chat         = useChat();
-  const [showModal, setShowModal] = useState(false);
-
-  const { config, pricing } = configurator;
-  const vehicle = VEHICLES[config.model];
-
-  const carConfigText = `${vehicle.label} ${pricing.version.label} · ${pricing.color.label} · ${pricing.province.label}`;
-  const selectedVehicleContext = {
-    model: vehicle.label,
-    version: pricing.version.label,
-    color: pricing.color.label,
-    province: pricing.province.label,
-    battery: config.battery,
-    accessories: pricing.accList.map((accessory) => accessory.label),
-  };
-
-  const handleAskAI = () => {
-    const msg = `Tôi đang xem cấu hình ${carConfigText}. Bạn tư vấn thêm giúp tôi nhé.`;
-    chat.sendWithContext(msg, selectedVehicleContext);
-  };
-
+export default function ChooseModel() {
+  const keys = Object.keys(VEHICLES) as VehicleKey[];
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      {/* Header chung */}
-      <Header />
-
-      {/* 3 panels */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Panel trái */}
-        <div className="w-[340px] flex-shrink-0 bg-white border-r overflow-y-auto">
-          <SelectorPanel
-            configurator={configurator}
-            onAskAI={handleAskAI}
-            onRequestQuote={() => setShowModal(true)}
-          />
+    <div className="min-h-screen bg-white">
+      <SiteNav />
+      <Stepper current={0} />
+      <main className="mx-auto max-w-6xl px-5 pb-16 pt-4">
+        <h1 className="text-3xl font-bold text-slate-900">Bạn muốn cấu hình dòng xe nào?</h1>
+        <div className="mt-8 grid grid-cols-2 gap-5 md:grid-cols-3">
+          {keys.map((k) => {
+            const v = VEHICLES[k];
+            return (
+              <Link key={k} href={`/configurator/customize?model=${k}`} className="rounded-3xl border border-slate-200 p-5 transition hover:border-blue-600 hover:shadow-lg">
+                <CarImage model={k} colorId={v.colors[0].id} alt={v.label} />
+                <p className="mt-3 text-xl font-bold text-slate-900">{v.label}</p>
+                <p className="text-sm text-slate-500">{v.versions.length} phiên bản · {v.colors.length} màu · từ {formatNumber(Math.min(...v.versions.map((x) => x.price)))}đ</p>
+              </Link>
+            );
+          })}
         </div>
-
-        {/* Panel giữa */}
-        <div className="flex-1 overflow-y-auto bg-gray-50">
-          <PricingPanel
-            configurator={configurator}
-            onRequestQuote={() => setShowModal(true)}
-          />
-        </div>
-
-        {/* Panel phải */}
-        <div className="w-[380px] flex-shrink-0 bg-white border-l flex flex-col">
-          <ChatPanel chat={chat} configurator={configurator} />
-        </div>
-      </div>
-
-      {/* Modal nhận thông tin buyer */}
-      <BuyerIdentityModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        onConfirm={(info) => {
-          console.log("Lead info:", info);
-          // TODO: POST /api/v1/quotes với info + config + pricing
-        }}
-        finalPrice={pricing.finalPrice}
-        carConfig={carConfigText}
-      />
+      </main>
     </div>
   );
 }

@@ -29,6 +29,7 @@ export function Header() {
   const ROLE_LABEL: Record<string, string> = {
     seller:    "Nhân viên kinh doanh",
     warehouse: "Thủ kho",
+    warehouse_manager: "Quản lý kho",
     admin:     "Quản trị viên",
   };
 

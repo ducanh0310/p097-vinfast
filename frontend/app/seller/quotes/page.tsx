@@ -39,8 +39,8 @@ export default function QuotesPage() {
       {/* ── LEFT: List ── */}
       <div className="flex-1 p-6 space-y-5 overflow-y-auto">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Báo giá</h1>
-          <p className="text-gray-500 text-sm mt-1">Duyệt và quản lý báo giá từ AI</p>
+          <h1 className="text-2xl font-bold text-slate-900">Báo giá</h1>
+          <p className="text-slate-500 text-sm mt-1">Duyệt và quản lý báo giá từ AI</p>
         </div>
 
         {/* Stats */}
@@ -53,9 +53,9 @@ export default function QuotesPage() {
             <p className="text-xs text-green-600 font-medium">Đã duyệt</p>
             <p className="text-3xl font-bold text-green-700 mt-1">{approved}</p>
           </div>
-          <div className="bg-white border rounded-2xl p-4 text-center shadow-sm">
-            <p className="text-xs text-gray-500">Tổng</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{quotes.length}</p>
+          <div className="bg-white border rounded-3xl p-4 text-center shadow-sm">
+            <p className="text-xs text-slate-500">Tổng</p>
+            <p className="text-3xl font-bold text-slate-900 mt-1">{quotes.length}</p>
           </div>
         </div>
 
@@ -69,7 +69,7 @@ export default function QuotesPage() {
                 key={s}
                 onClick={() => setFilter(s)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  filterStatus === s ? "bg-blue-600 text-white" : "bg-white border text-gray-600 hover:border-blue-300"
+                  filterStatus === s ? "bg-blue-600 text-white" : "bg-white border text-slate-600 hover:border-blue-300"
                 }`}
               >
                 {labels[s]} ({count})
@@ -89,7 +89,7 @@ export default function QuotesPage() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1.5">
-                    <p className="font-semibold text-gray-900">{q.leadName}</p>
+                    <p className="font-semibold text-slate-900">{q.leadName}</p>
                     <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_CONFIG[q.status].color}`}>
                       {STATUS_CONFIG[q.status].icon}
                       {STATUS_CONFIG[q.status].label}
@@ -98,13 +98,13 @@ export default function QuotesPage() {
                   <p className="text-sm text-blue-600 font-medium">
                     {q.model} {q.version} · {q.province}
                   </p>
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-slate-400 mt-1">
                     📱 {q.leadPhone} · Bảng giá {q.priceVersion}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xl font-bold text-gray-900">{formatVND(q.finalPrice)}</p>
-                  <p className="text-xs text-gray-400 mt-1">{q.createdAt}</p>
+                  <p className="text-xl font-bold text-slate-900">{formatVND(q.finalPrice)}</p>
+                  <p className="text-xs text-slate-400 mt-1">{q.createdAt}</p>
                 </div>
               </div>
 
@@ -117,7 +117,7 @@ export default function QuotesPage() {
               </div>
 
               {q.sellerNote && (
-                <p className="mt-2 text-xs text-gray-500 italic">📝 {q.sellerNote}</p>
+                <p className="mt-2 text-xs text-slate-500 italic">📝 {q.sellerNote}</p>
               )}
             </button>
           ))}
@@ -128,11 +128,11 @@ export default function QuotesPage() {
       {selected ? (
         <div className="w-80 border-l bg-white flex-shrink-0 flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="px-5 py-5 border-b bg-gray-50">
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">
+          <div className="px-5 py-5 border-b bg-slate-50">
+            <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-1">
               Duyệt báo giá
             </p>
-            <p className="font-bold text-gray-900">{selected.leadName}</p>
+            <p className="font-bold text-slate-900">{selected.leadName}</p>
             <p className="text-sm text-blue-600">{selected.model} {selected.version}</p>
           </div>
 
@@ -140,13 +140,13 @@ export default function QuotesPage() {
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 text-sm">
             {/* Price breakdown */}
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Chi tiết cấu hình</p>
-              <div className="bg-gray-50 rounded-xl p-3 space-y-1.5 text-xs text-gray-600">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Chi tiết cấu hình</p>
+              <div className="bg-slate-50 rounded-xl p-3 space-y-1.5 text-xs text-slate-600">
                 <div className="flex justify-between"><span>Phiên bản</span><span className="font-medium">{selected.version}</span></div>
                 <div className="flex justify-between"><span>Màu sắc</span><span className="font-medium">{selected.config.color}</span></div>
                 <div className="flex justify-between"><span>Pin</span><span className="font-medium">{selected.config.battery}</span></div>
                 {selected.config.accessories.map((a) => (
-                  <div key={a} className="flex justify-between"><span>{a}</span><span className="text-gray-400">✓</span></div>
+                  <div key={a} className="flex justify-between"><span>{a}</span><span className="text-slate-400">✓</span></div>
                 ))}
               </div>
             </div>
@@ -154,7 +154,7 @@ export default function QuotesPage() {
             {/* Promos */}
             {selected.config.promos.length > 0 && (
               <div className="space-y-1.5">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Ưu đãi áp dụng</p>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Ưu đãi áp dụng</p>
                 {selected.config.promos.map((p) => (
                   <div key={p} className="bg-green-50 text-green-700 text-xs px-3 py-2 rounded-lg">🎁 {p}</div>
                 ))}
@@ -170,14 +170,14 @@ export default function QuotesPage() {
 
             {/* Note */}
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Ghi chú</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Ghi chú</p>
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 disabled={selected.status !== "pending"}
                 placeholder="Thêm ghi chú cho khách hàng..."
                 rows={3}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:bg-gray-50 disabled:text-gray-400"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:bg-slate-50 disabled:text-slate-400"
               />
             </div>
 
@@ -208,15 +208,15 @@ export default function QuotesPage() {
               >
                 <XCircle size={16} /> Từ chối
               </button>
-              <button className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm transition-colors">
+              <button className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm transition-colors">
                 <FileText size={14} /> Xem trước PDF
               </button>
             </div>
           )}
         </div>
       ) : (
-        <div className="w-80 border-l bg-gray-50 flex-shrink-0 flex items-center justify-center">
-          <div className="text-center text-gray-400">
+        <div className="w-80 border-l bg-slate-50 flex-shrink-0 flex items-center justify-center">
+          <div className="text-center text-slate-400">
             <Eye size={32} className="mx-auto mb-2 opacity-40" />
             <p className="text-sm">Chọn báo giá để xem & duyệt</p>
           </div>
@@ -228,7 +228,7 @@ export default function QuotesPage() {
 
 function Tag({ label, green }: { label: string; green?: boolean }) {
   return (
-    <span className={`text-xs px-2 py-0.5 rounded-full ${green ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+    <span className={`text-xs px-2 py-0.5 rounded-full ${green ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"}`}>
       {label}
     </span>
   );

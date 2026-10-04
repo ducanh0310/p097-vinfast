@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type UserRole = "buyer" | "seller" | "warehouse" | "admin";
+export type UserRole = "buyer" | "seller" | "warehouse" | "warehouse_manager";
 
 export interface AuthUser {
   id:       string;
@@ -10,6 +10,8 @@ export interface AuthUser {
   role:     UserRole;
   dealerId: string | null;
   dealer:   string | null;
+  branchId: string | null;
+  storeIds: string[] | null; // null = mọi cửa hàng thuộc đại lý
 }
 
 interface AuthState {
@@ -20,28 +22,21 @@ interface AuthState {
 }
 
 const MOCK_USERS: (AuthUser & { password: string })[] = [
-  {
-    id: "u1", name: "Nguyễn Văn An",
-    email: "seller@abc.vn", password: "123456",
-    role: "seller", dealerId: "d1", dealer: "Đại lý ABC - Hà Nội",
-  },
-  {
-    id: "u2", name: "Trần Thị Bình",
-    email: "warehouse@abc.vn", password: "123456",
-    role: "warehouse", dealerId: "d1", dealer: "Đại lý ABC - Hà Nội",
-  },
-  {
-    id: "u3", name: "Admin VinFast",
-    email: "admin@vinfast.vn", password: "admin123",
-    role: "admin", dealerId: null, dealer: null,
-  },
+  { id: "u1", name: "Nguyễn Văn An", email: "seller@abc.vn", password: "123456", role: "seller",
+    dealerId: "d1", dealer: "Đại lý ABC - Hà Nội", branchId: null, storeIds: null },
+  { id: "u2", name: "Trần Thị Bình", email: "warehouse@abc.vn", password: "123456", role: "warehouse",
+    dealerId: "d1", dealer: "Đại lý ABC - Hà Nội", branchId: "b1", storeIds: ["s1"] },
+  { id: "u4", name: "Lê Văn Cường", email: "warehouse2@abc.vn", password: "123456", role: "warehouse",
+    dealerId: "d1", dealer: "Đại lý ABC - Hà Nội", branchId: "b2", storeIds: ["s3"] },
+  { id: "u5", name: "Phạm Thu Hà", email: "manager@abc.vn", password: "123456", role: "warehouse_manager",
+    dealerId: "d1", dealer: "Đại lý ABC - Hà Nội", branchId: null, storeIds: null },
 ];
 
 export const ROLE_HOME: Record<UserRole, string> = {
   buyer:     "/configurator",
   seller:    "/seller/dashboard",
   warehouse: "/warehouse/dashboard",
-  admin:     "/admin/dashboard",
+  warehouse_manager: "/warehouse/dashboard",
 };
 
 // ── Helper: set/remove cookie ────────────────────────────────

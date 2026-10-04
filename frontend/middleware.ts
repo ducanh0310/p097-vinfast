@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Routes cần login và role tương ứng
 const PROTECTED: Record<string, string[]> = {
-  "/seller":    ["seller",    "admin"],
-  "/warehouse": ["warehouse", "admin"],
-  "/admin":     ["admin"],
+  "/seller":    ["seller"],
+  "/warehouse": ["warehouse", "warehouse_manager"],
 };
 
 function getRole(req: NextRequest): string | null {
@@ -43,5 +42,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/seller/:path*", "/warehouse/:path*", "/admin/:path*"],
+  matcher: ["/seller/:path*", "/warehouse/:path*"],
 };
