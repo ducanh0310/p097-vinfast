@@ -39,12 +39,12 @@ export default function InventoryPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Kho xe</h1>
-          <p className="text-gray-500 text-sm mt-1">Tồn kho hiện tại tại đại lý</p>
+          <h1 className="text-2xl font-bold text-slate-900">Kho xe</h1>
+          <p className="text-slate-500 text-sm mt-1">Tồn kho hiện tại tại đại lý</p>
         </div>
         <div className="flex gap-3">
           <div className="bg-white border rounded-xl px-4 py-2 text-center shadow-sm">
-            <p className="text-xs text-gray-500">Tổng xe</p>
+            <p className="text-xs text-slate-500">Tổng xe</p>
             <p className="font-bold text-blue-600">{totalCars}</p>
           </div>
           {outOfStock > 0 && (
@@ -61,16 +61,16 @@ export default function InventoryPage() {
 
       {/* Table theo model */}
       {Object.entries(grouped).map(([model, modelItems]) => (
-        <div key={model} className="bg-white rounded-2xl border shadow-sm overflow-hidden">
-          <div className="px-5 py-3 border-b bg-gray-50 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900">VinFast {model}</h2>
-            <span className="text-xs text-gray-500">
+        <div key={model} className="bg-white rounded-3xl border shadow-sm overflow-hidden">
+          <div className="px-5 py-3 border-b bg-slate-50 flex items-center justify-between">
+            <h2 className="font-semibold text-slate-900">VinFast {model}</h2>
+            <span className="text-xs text-slate-500">
               {modelItems.reduce((s, i) => s + i.quantity, 0)} xe tồn kho
             </span>
           </div>
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-xs text-gray-500 uppercase tracking-wide border-b">
+              <tr className="text-xs text-slate-500 uppercase tracking-wide border-b">
                 <th className="px-5 py-3 text-left">Phiên bản</th>
                 <th className="px-4 py-3 text-left">Màu sắc</th>
                 <th className="px-4 py-3 text-center">Số lượng</th>
@@ -81,15 +81,15 @@ export default function InventoryPage() {
             </thead>
             <tbody className="divide-y">
               {modelItems.map((item) => (
-                <tr key={item.id} className={`hover:bg-gray-50 transition-colors ${item.quantity === 0 ? "bg-red-50/50" : ""}`}>
-                  <td className="px-5 py-3 font-medium text-gray-800">{item.version}</td>
+                <tr key={item.id} className={`hover:bg-slate-50 transition-colors ${item.quantity === 0 ? "bg-red-50/50" : ""}`}>
+                  <td className="px-5 py-3 font-medium text-slate-800">{item.version}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <span
-                        className="w-4 h-4 rounded-full border border-gray-300"
+                        className="w-4 h-4 rounded-full border border-slate-300"
                         style={{ backgroundColor: item.colorHex }}
                       />
-                      <span className="text-gray-700">{item.color}</span>
+                      <span className="text-slate-700">{item.color}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-center">
@@ -122,14 +122,14 @@ export default function InventoryPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-400">{item.updatedAt}</td>
+                  <td className="px-4 py-3 text-xs text-slate-400">{item.updatedAt}</td>
                   <td className="px-4 py-3 text-center">
                     {editId === item.id ? (
                       <div className="flex items-center justify-center gap-1.5">
                         <button onClick={() => saveEdit(item.id)} className="p-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors">
                           <Save size={13} />
                         </button>
-                        <button onClick={() => setEditId(null)} className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors">
+                        <button onClick={() => setEditId(null)} className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors">
                           <X size={13} />
                         </button>
                       </div>

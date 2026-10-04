@@ -12,7 +12,7 @@ export interface Config {
   accessories: string[];
 }
 
-export function useConfigurator() {
+export function useConfigurator(initial: Partial<Config> = {}) {
   const [config, setConfig] = useState<Config>({
     model:       "VF6",
     versionId:   "vf6_plus",
@@ -20,6 +20,7 @@ export function useConfigurator() {
     provinceId:  "HN",
     battery:     "rent",
     accessories: [],
+    ...initial,
   });
 
   const setField = <K extends keyof Config>(key: K, val: Config[K]) => {

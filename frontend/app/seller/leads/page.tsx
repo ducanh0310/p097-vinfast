@@ -32,24 +32,24 @@ export default function LeadsPage() {
       <div className="flex-1 p-6 space-y-4 overflow-y-auto">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Khách hàng</h1>
-            <p className="text-gray-500 text-sm mt-1">{LEADS.length} leads từ AI chat</p>
+            <h1 className="text-2xl font-bold text-slate-900">Khách hàng</h1>
+            <p className="text-slate-500 text-sm mt-1">{LEADS.length} leads từ AI chat</p>
           </div>
         </div>
 
         {/* Filters */}
         <div className="flex gap-3 flex-wrap">
           <div className="flex-1 min-w-48 relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm tên, xe quan tâm..."
-              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             />
           </div>
           <select
             value={filterStatus} onChange={(e) => setFilter(e.target.value)}
-            className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
             <option value="all">Tất cả trạng thái</option>
             {Object.entries(STATUS_CONFIG).map(([k, v]) => (
@@ -69,7 +69,7 @@ export default function LeadsPage() {
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   filterStatus === s
                     ? "bg-blue-600 text-white"
-                    : "bg-white border text-gray-600 hover:border-blue-300"
+                    : "bg-white border text-slate-600 hover:border-blue-300"
                 }`}
               >
                 {s === "all" ? "Tất cả" : STATUS_CONFIG[s as keyof typeof STATUS_CONFIG].label} ({count})
@@ -89,23 +89,23 @@ export default function LeadsPage() {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <p className="font-semibold text-gray-900">{lead.name}</p>
+                    <p className="font-semibold text-slate-900">{lead.name}</p>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_CONFIG[lead.status].color}`}>
                       {STATUS_CONFIG[lead.status].label}
                     </span>
                   </div>
                   <p className="text-sm text-blue-600 font-medium">{lead.interestedIn}</p>
-                  <p className="text-xs text-gray-400 mt-1 truncate">
+                  <p className="text-xs text-slate-400 mt-1 truncate">
                     💬 &quot;{lead.lastMessage}&quot;
                   </p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-xs font-semibold text-gray-700">{formatVND(lead.budget)}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{lead.province}</p>
-                  <p className="text-xs text-gray-400">{lead.messageCount} tin nhắn</p>
+                  <p className="text-xs font-semibold text-slate-700">{formatVND(lead.budget)}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{lead.province}</p>
+                  <p className="text-xs text-slate-400">{lead.messageCount} tin nhắn</p>
                 </div>
               </div>
-              <p className="text-xs text-gray-400 mt-2">{lead.createdAt}</p>
+              <p className="text-xs text-slate-400 mt-2">{lead.createdAt}</p>
             </button>
           ))}
         </div>
@@ -116,12 +116,12 @@ export default function LeadsPage() {
         <div className="w-80 border-l bg-white flex-shrink-0 overflow-y-auto">
           <div className="px-5 py-5 border-b">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-bold text-gray-900">{selected.name}</h2>
+              <h2 className="font-bold text-slate-900">{selected.name}</h2>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_CONFIG[selected.status].color}`}>
                 {STATUS_CONFIG[selected.status].label}
               </span>
             </div>
-            <div className="space-y-2 text-sm text-gray-600">
+            <div className="space-y-2 text-sm text-slate-600">
               <p>📱 {selected.phone}</p>
               <p>📍 {selected.province}</p>
               <p>🚗 Quan tâm: <strong>{selected.interestedIn}</strong></p>
@@ -132,13 +132,13 @@ export default function LeadsPage() {
           </div>
 
           <div className="px-5 py-4 border-b">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Tin nhắn cuối</p>
-            <p className="text-sm text-gray-700 italic">&quot;{selected.lastMessage}&quot;</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Tin nhắn cuối</p>
+            <p className="text-sm text-slate-700 italic">&quot;{selected.lastMessage}&quot;</p>
           </div>
 
           <div className="px-5 py-4 border-b">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Cập nhật trạng thái</p>
-            <select className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Cập nhật trạng thái</p>
+            <select className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
               {Object.entries(STATUS_CONFIG).map(([k, v]) => (
                 <option key={k} value={k} selected={k === selected.status}>{v.label}</option>
               ))}
@@ -155,7 +155,7 @@ export default function LeadsPage() {
           </div>
         </div>
       ) : (
-        <div className="w-80 border-l bg-gray-50 flex-shrink-0 flex items-center justify-center text-gray-400 text-sm">
+        <div className="w-80 border-l bg-slate-50 flex-shrink-0 flex items-center justify-center text-slate-400 text-sm">
           Chọn khách hàng để xem chi tiết
         </div>
       )}

@@ -18,8 +18,8 @@ export default function DashboardPage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Tổng quan</h1>
-        <p className="text-gray-500 text-sm mt-1">Tháng 10/2026 · Đại lý ABC Hà Nội</p>
+        <h1 className="text-2xl font-bold text-slate-900">Tổng quan</h1>
+        <p className="text-slate-500 text-sm mt-1">Tháng 10/2026 · Đại lý ABC Hà Nội</p>
       </div>
 
       {/* Stat cards */}
@@ -54,7 +54,7 @@ export default function DashboardPage() {
           label="Doanh thu tháng"
           value={formatVND(DASHBOARD_STATS.revenueThisMonth)}
           sub={formatVND(DASHBOARD_STATS.totalRevenue) + " tổng"}
-          subColor="text-gray-500"
+          subColor="text-slate-500"
           small
         />
       </div>
@@ -62,8 +62,8 @@ export default function DashboardPage() {
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Leads theo tuần */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border p-5 shadow-sm">
-          <h2 className="font-semibold text-gray-900 mb-4">Leads & Báo giá trong tuần</h2>
+        <div className="lg:col-span-2 bg-white rounded-3xl border p-5 shadow-sm">
+          <h2 className="font-semibold text-slate-900 mb-4">Leads & Báo giá trong tuần</h2>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={WEEKLY_LEADS} barGap={4}>
               <XAxis dataKey="day" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
@@ -78,8 +78,8 @@ export default function DashboardPage() {
         </div>
 
         {/* Xe được quan tâm */}
-        <div className="bg-white rounded-2xl border p-5 shadow-sm">
-          <h2 className="font-semibold text-gray-900 mb-4">Xe được quan tâm</h2>
+        <div className="bg-white rounded-3xl border p-5 shadow-sm">
+          <h2 className="font-semibold text-slate-900 mb-4">Xe được quan tâm</h2>
           <div className="space-y-3">
             {MODEL_INTEREST.map((item) => {
               const max = MODEL_INTEREST[0].count;
@@ -87,10 +87,10 @@ export default function DashboardPage() {
               return (
                 <div key={item.model}>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="font-medium text-gray-700">{item.model}</span>
-                    <span className="text-gray-500">{item.count} lượt</span>
+                    <span className="font-medium text-slate-700">{item.model}</span>
+                    <span className="text-slate-500">{item.count} lượt</span>
                   </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all"
                       style={{ width: `${pct}%`, backgroundColor: item.color }}
@@ -104,20 +104,20 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent activity */}
-      <div className="bg-white rounded-2xl border p-5 shadow-sm">
-        <h2 className="font-semibold text-gray-900 mb-4">Hoạt động gần đây</h2>
+      <div className="bg-white rounded-3xl border p-5 shadow-sm">
+        <h2 className="font-semibold text-slate-900 mb-4">Hoạt động gần đây</h2>
         <div className="space-y-3">
           {[
             { icon:"🆕", text:"Nguyễn Văn An yêu cầu báo giá VF6 Plus",        time:"9 phút trước",  color:"text-blue-600" },
             { icon:"✅", text:"Phạm Thị Dung đã đặt cọc - VF6 Plus Xanh",       time:"2 giờ trước",   color:"text-green-600" },
-            { icon:"💬", text:"Vũ Thị Hoa hỏi về màu xanh VF7",                  time:"3 giờ trước",   color:"text-gray-600" },
+            { icon:"💬", text:"Vũ Thị Hoa hỏi về màu xanh VF7",                  time:"3 giờ trước",   color:"text-slate-600" },
             { icon:"📋", text:"Đặng Văn Hùng yêu cầu báo giá VF6 Tiêu chuẩn",  time:"Hôm qua 14:00", color:"text-blue-600" },
             { icon:"❌", text:"Hoàng Minh Đức từ chối báo giá VF8",             time:"Hôm qua 16:00", color:"text-red-500"  },
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-3 py-2 border-b last:border-0">
               <span className="text-xl">{item.icon}</span>
               <span className={`flex-1 text-sm ${item.color}`}>{item.text}</span>
-              <span className="text-xs text-gray-400 flex-shrink-0">{item.time}</span>
+              <span className="text-xs text-slate-400 flex-shrink-0">{item.time}</span>
             </div>
           ))}
         </div>
@@ -138,12 +138,12 @@ function StatCard({
   small?: boolean;
 }) {
   return (
-    <div className="bg-white rounded-2xl border p-5 shadow-sm">
+    <div className="bg-white rounded-3xl border p-5 shadow-sm">
       <div className={`w-10 h-10 ${bg} rounded-xl flex items-center justify-center mb-3`}>
         {icon}
       </div>
-      <p className="text-xs text-gray-500 mb-1">{label}</p>
-      <p className={`font-bold text-gray-900 ${small ? "text-lg" : "text-2xl"}`}>{value}</p>
+      <p className="text-xs text-slate-500 mb-1">{label}</p>
+      <p className={`font-bold text-slate-900 ${small ? "text-lg" : "text-2xl"}`}>{value}</p>
       <p className={`text-xs mt-1 ${subColor}`}>{sub}</p>
     </div>
   );
