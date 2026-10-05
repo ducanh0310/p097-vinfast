@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { LEADS, Lead } from "@/lib/seller-mock-data";
 import { formatVND } from "@/lib/format";
-import { MessageCircle, Phone, Search, Filter } from "lucide-react";
+import { MessageCircle, Phone, Search } from "lucide-react";
 
 const STATUS_CONFIG = {
   new:          { label: "Mới",          color: "bg-blue-100 text-blue-700"   },

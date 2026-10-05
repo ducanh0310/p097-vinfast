@@ -7,7 +7,6 @@ import { ChevronDown, ChevronUp, FileText, CheckCircle } from "lucide-react";
 
 export function PriceCard({ data }: { data: PriceQuoteData }) {
   const [open, setOpen] = useState(false);
-  const rollingTotal = Object.values(data.rolling_costs).reduce((a, b) => a + b, 0);
 
   return (
     <div className="w-80 bg-white rounded-2xl border shadow-md overflow-hidden text-sm">

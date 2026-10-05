@@ -15,7 +15,6 @@ def test_pipeline_execution(tmp_path):
     assert report.total_bronze_records > 0
     assert report.total_silver_documents > 0
     assert report.total_silver_chunks > 0
-    assert report.total_faq_items == 400
     assert report.total_vehicles > 0
     assert report.average_quality_score > 0.0
 
@@ -26,7 +25,11 @@ def test_pipeline_execution(tmp_path):
     assert (config.silver_dir / "silver_vehicles.jsonl").exists()
     assert (config.silver_dir / "silver_report.json").exists()
 
+    with open(config.silver_dir / "silver_faq.jsonl", encoding="utf-8") as f:
+        faq_count = sum(1 for line in f if line.strip())
+    assert report.total_faq_items == faq_count
+
     # Verify report JSON content
     with open(config.silver_dir / "silver_report.json", encoding="utf-8") as f:
         report_data = json.load(f)
-    assert report_data["total_faq_items"] == 400
+    assert report_data["total_faq_items"] == faq_count

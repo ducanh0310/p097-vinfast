@@ -1,15 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useAuthStore, ROLE_HOME } from "@/lib/auth-store";
+
+const subscribeToNothing = () => () => {};
+const getClientMountedSnapshot = () => true;
+const getServerMountedSnapshot = () => false;
 
 /** Chưa đăng nhập: nút "Đăng nhập". Đã đăng nhập: vào thẳng dashboard theo vai trò. */
 export function AuthButton() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []); // tránh lệch SSR vì auth lưu ở localStorage
+  const mounted = useSyncExternalStore(
+    subscribeToNothing,
+    getClientMountedSnapshot,
+    getServerMountedSnapshot,
+  );
 
   const base = "rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700";
   if (!mounted || !user || !ROLE_HOME[user.role] || user.role === "buyer") {

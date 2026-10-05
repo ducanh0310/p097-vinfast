@@ -4,7 +4,6 @@ import { VEHICLES } from "@/lib/vehicle-data";
 import { formatVND } from "@/lib/format";
 import { useConfigurator } from "@/hooks/use-configurator";
 import { Info } from "lucide-react";
-import Image from "next/image";
 
 interface Props {
   configurator: ReturnType<typeof useConfigurator>;

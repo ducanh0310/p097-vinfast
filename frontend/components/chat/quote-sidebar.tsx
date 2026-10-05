@@ -2,7 +2,6 @@
 
 import { PriceQuoteData, InstallmentData } from "@/types/chat";
 import { formatVND } from "@/lib/format";
-import { X } from "lucide-react";
 
 type QuoteData = PriceQuoteData | InstallmentData;
 

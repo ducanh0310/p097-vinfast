@@ -6,11 +6,11 @@ import {
 import { formatVND } from "@/lib/format";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, Cell,
+  ResponsiveContainer,
 } from "recharts";
 import {
-  Users, FileText, TrendingUp,
-  Clock, CheckCircle, Car,
+  Users, TrendingUp,
+  Clock, CheckCircle,
 } from "lucide-react";
 
 export default function DashboardPage() {

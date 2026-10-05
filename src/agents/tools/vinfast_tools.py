@@ -3,7 +3,6 @@
 import csv
 import json
 import re
-import sqlite3
 import unicodedata
 from datetime import date
 from functools import lru_cache
@@ -14,9 +13,8 @@ from langchain_core.tools import tool
 from src.agents.tools.rag import search_gold_knowledge
 from src.agents.tools.web_lookup import lookup_official_web
 
-DATA_DIR = Path(__file__).resolve().parents[3] / "data" / "vinfast_agent"
-RELATIONAL_DIR = DATA_DIR / "relational"
-SPECS_DB = DATA_DIR / "specs" / "vinfast_catalog.db"
+GOLD_DIR = Path(__file__).resolve().parents[3] / "dataset" / "gold"
+RELATIONAL_DIR = GOLD_DIR / "rdb_schema"
 
 
 def _normalize(text: str | None) -> str:
@@ -73,45 +71,33 @@ def _canonical_group(value: str | None) -> str | None:
 
 @lru_cache(maxsize=1)
 def _load_data() -> tuple[list[dict], list[dict], list[dict]]:
-    prices = _read_csv("vinfast_car_editions_pricing.csv")
-    color_rows = _read_csv("vinfast_car_color_options.csv")
-    rolling_rows = _read_csv("vinfast_car_rolling_costs.csv")
-
-    colors: dict[tuple[str, str], list[dict]] = {}
-    for row in color_rows:
-        colors.setdefault((row["model_id"], row["edition_id"]), []).append({
-            "name": row["color_name"],
-            "type": row["color_type"],
-            "extra_vnd": int(row["color_extra_price_vnd"] or 0),
-        })
-
-    specs: dict[str, dict] = {}
-    if SPECS_DB.is_file():
-        with sqlite3.connect(SPECS_DB.as_uri() + "?mode=ro", uri=True) as conn:
-            conn.row_factory = sqlite3.Row
-            for record in conn.execute("SELECT * FROM car_catalog"):
-                item = dict(record)
-                item["specs"] = json.loads(item.pop("specs_json") or "{}")
-                specs[_normalize(item["model_name"])] = item
+    cars = {
+        row["car_id"]: row
+        for row in _read_csv("cars_catalog.csv")
+        if row.get("vehicle_type", "").lower() == "electric car"
+    }
+    prices = _read_csv("trims_pricing.csv")
+    rolling_rows = _read_csv("rolling_cost_matrix.csv")
 
     catalog = []
     for row in prices:
-        if not row["model_id"].startswith("Products-Car-"):
+        car = cars.get(row["car_id"])
+        if car is None:
             continue
-        model_specs = specs.get(_normalize(row["model_name"]), {})
         catalog.append({
-            "model_id": row["model_id"],
-            "edition_id": row["edition_id"],
-            "name": f"VinFast {row['model_name']}",
-            "model_name": row["model_name"],
-            "edition": row["edition_name"],
-            "price_vnd": int(row["price_with_battery_vnd"] or row["price_vnd"]),
-            "segment": model_specs.get("segment"),
-            "seats": model_specs.get("seats"),
-            "specs": model_specs,
-            "colors": colors.get((row["model_id"], row["edition_id"]), []),
+            "model_id": row["car_id"],
+            "edition_id": row["trim_id"],
+            "name": f"VinFast {row['car_name']}",
+            "model_name": row["car_name"],
+            "edition": row["trim_name"],
+            "battery_option": row.get("battery_option", ""),
+            "price_vnd": int(row["price_vat_vnd"] or 0),
+            "segment": None,
+            "seats": None,
+            "specs": {},
+            "colors": [],
         })
-    return catalog, rolling_rows, _read_csv("vinfast_promotions.csv")
+    return catalog, rolling_rows, []
 
 
 def _resolve(queries: list[str] | None) -> tuple[list[dict], list[str]]:
@@ -194,7 +180,94 @@ def search_vehicles(
     return json.dumps({
         "matched_versions": output,
         "notes": [f"Không tìm thấy xe: {q}" for q in unmatched],
-        "catalog_source": "P-097/data/vinfast_agent",
+        "catalog_source": "dataset/gold/rdb_schema",
+    }, ensure_ascii=False)
+
+
+@tool
+def lookup_car_color_options(vehicle_queries: list[str]) -> str:
+    """Look up available exterior colors and color surcharges for VinFast trims.
+
+    Args:
+        vehicle_queries: Car models or trims to look up, e.g. ["VF 3", "VF 6 Plus"].
+    """
+    rows = _read_csv("vinfast_car_color_options.csv")
+    matched_options = []
+    unmatched = []
+    for query in vehicle_queries:
+        term = _normalize(query)
+        matches = [
+            row for row in rows
+            if term and term in _normalize(f"{row['model_name']} {row['edition_name']}")
+        ]
+        if not matches:
+            unmatched.append(query)
+            continue
+        for row in matches:
+            option = {
+                "model": row["model_name"],
+                "edition": row["edition_name"],
+                "color": row["color_name"],
+                "color_code": row["color_code"],
+                "color_type": row["color_type"],
+                "extra_price_vnd": int(row["color_extra_price_vnd"] or 0),
+                "total_car_price_vnd": int(row["total_car_price_vnd"] or 0),
+                "image_url": row.get("image_url", ""),
+            }
+            if option not in matched_options:
+                matched_options.append(option)
+    return json.dumps({
+        "color_options": matched_options,
+        "notes": [f"Không tìm thấy màu xe: {query}" for query in unmatched],
+        "catalog_source": "dataset/gold/rdb_schema/vinfast_car_color_options.csv",
+    }, ensure_ascii=False)
+
+
+@tool
+def lookup_province_fees(province: str, vehicle_queries: list[str] | None = None) -> str:
+    """Look up vehicle registration fees by Vietnamese province or city.
+
+    Args:
+        province: Province or city, e.g. "Hà Nội" or "TP. Hồ Chí Minh".
+        vehicle_queries: Optional car models or trims for an estimated car registration total.
+    """
+    rows = _read_csv("vinfast_provinces_fees.csv")
+    fee_row = next((row for row in rows if _normalize(row["province_name"]) == _normalize(province)), None)
+    if fee_row is None:
+        return json.dumps({"error": f"Không tìm thấy phí cho tỉnh/thành: {province}"}, ensure_ascii=False)
+
+    registration_rate = float(fee_row["car_registration_fee_pct"] or 0)
+    fees = {
+        "province": fee_row["province_name"],
+        "zone": fee_row["zone"],
+        "car_license_plate_fee_vnd": int(fee_row["car_license_plate_fee_vnd"] or 0),
+        "car_registration_fee_percent": registration_rate * 100,
+        "bike_license_fee_low_vnd": int(fee_row["bike_license_fee_low_vnd"] or 0),
+        "bike_license_fee_medium_vnd": int(fee_row["bike_license_fee_medium_vnd"] or 0),
+        "bike_license_fee_high_vnd": int(fee_row["bike_license_fee_high_vnd"] or 0),
+        "bike_registration_fee_percent": float(fee_row["bike_registration_fee_pct"] or 0) * 100,
+    }
+    estimates = []
+    unmatched = []
+    if vehicle_queries:
+        vehicles, unmatched = _resolve(vehicle_queries)
+        for vehicle in vehicles:
+            registration = round(vehicle["price_vnd"] * registration_rate)
+            plate_fee = fees["car_license_plate_fee_vnd"]
+            estimates.append({
+                "vehicle": vehicle["name"],
+                "edition": vehicle["edition"],
+                "listed_price_vnd": vehicle["price_vnd"],
+                "car_registration_fee_vnd": registration,
+                "car_license_plate_fee_vnd": plate_fee,
+                "estimated_province_fees_vnd": registration + plate_fee,
+            })
+
+    return json.dumps({
+        "fees": fees,
+        "car_estimates": estimates,
+        "notes": [f"Không tìm thấy xe: {query}" for query in unmatched],
+        "catalog_source": "dataset/gold/rdb_schema/vinfast_provinces_fees.csv",
     }, ensure_ascii=False)
 
 
@@ -214,8 +287,9 @@ def calculate_vehicle_tco(vehicle_queries: list[str], years: int = 5, location: 
     results = []
     for vehicle in vehicles:
         row = next((r for r in rolling_rows
-                    if r["model_id"] == vehicle["model_id"]
-                    and r["edition_id"] == vehicle["edition_id"]
+                    if r["car_id"] == vehicle["model_id"]
+                    and _normalize(r["trim_name"]) == _normalize(vehicle["edition"])
+                    and _normalize(r.get("battery_option")) == _normalize(vehicle["battery_option"])
                     and _normalize(r["province_name"]) == _normalize(location)), None) if location else None
         if not row:
             results.append({
@@ -227,7 +301,7 @@ def calculate_vehicle_tco(vehicle_queries: list[str], years: int = 5, location: 
             })
             continue
         initial = int(row["total_rolling_cost_vnd"])
-        annual = int(row["road_maintenance_fee_1yr"] or 0) + int(row["civil_insurance_fee_1yr"] or 0)
+        annual = int(row.get("road_fee_vnd") or 0) + int(row.get("mandatory_insurance_vnd") or 0)
         total = initial + annual * (years - 1)
         results.append({
             "vehicle": vehicle["name"], "edition": vehicle["edition"], "years": years,
@@ -346,4 +420,12 @@ def get_eligible_promotions(
     }, ensure_ascii=False)
 
 
-VINFAST_TOOLS = [search_gold_knowledge, search_vehicles, calculate_vehicle_tco, get_eligible_promotions, lookup_official_web]
+VINFAST_TOOLS = [
+    search_gold_knowledge,
+    search_vehicles,
+    lookup_car_color_options,
+    lookup_province_fees,
+    calculate_vehicle_tco,
+    get_eligible_promotions,
+    lookup_official_web,
+]

@@ -1,7 +1,7 @@
 "use client";
 
 import { InventoryData } from "@/types/chat";
-import { MapPin, Package, Clock } from "lucide-react";
+import { MapPin, Package } from "lucide-react";
 
 export function InventoryCard({ data }: { data: InventoryData }) {
   return (

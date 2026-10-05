@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { Send, Bot, ChevronDown } from "lucide-react";
+import { Send, Bot } from "lucide-react";
 import { useChat } from "@/hooks/use-chat";
 import { useConfigurator } from "@/hooks/use-configurator";
 import { VEHICLES } from "@/lib/vehicle-data";

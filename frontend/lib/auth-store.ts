@@ -65,7 +65,16 @@ export const useAuthStore = create<AuthState>()(
           return { ok: false, error: "Email hoặc mật khẩu không đúng" };
         }
 
-        const { password: _, ...user } = found;
+        const user: AuthUser = {
+          id: found.id,
+          name: found.name,
+          email: found.email,
+          role: found.role,
+          dealerId: found.dealerId,
+          dealer: found.dealer,
+          branchId: found.branchId,
+          storeIds: found.storeIds,
+        };
         const token = `mock-token-${user.id}-${Date.now()}`;
 
         set({ user, token });
