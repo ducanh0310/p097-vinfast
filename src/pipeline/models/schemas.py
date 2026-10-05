@@ -89,7 +89,7 @@ class SilverFAQItem:
 
 @dataclass
 class SilverVehicle:
-    """Clean relational vehicle product, pricing, and specs."""
+    """Clean relational vehicle product, pricing, specs, and color configurations."""
     vehicle_id: str
     model_name: str
     vehicle_type: str  # 'car' or 'bike'
@@ -99,6 +99,8 @@ class SilverVehicle:
     promotions: list[str]
     rolling_costs: dict[str, Any]
     searchable_markdown: str
+    colors: list[dict[str, Any]] = field(default_factory=list)
+    interior_colors: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
