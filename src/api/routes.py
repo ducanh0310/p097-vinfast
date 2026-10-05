@@ -85,7 +85,7 @@ async def configurate(
                 VehiclePrice.model   == req.model,
                 VehiclePrice.version == req.version,
                 VehiclePrice.color   == req.color,
-                VehiclePrice.effective_to == None,
+                VehiclePrice.effective_to.is_(None),
             )
         )
     )
@@ -101,7 +101,6 @@ async def configurate(
     )
     bat = bat_result.scalar_one_or_none()
     battery_cost = (bat.buy_price if bat else 0) if req.battery == "buy" else 0
-    battery_rent = (bat.rent_price if bat else 0) if req.battery == "rent" else 0
 
     # 3. Phụ kiện
     acc_list = []
@@ -141,7 +140,7 @@ async def configurate(
     promo_result = await db.execute(
         select(Promotion).where(
             and_(
-                Promotion.is_active  == True,
+                Promotion.is_active.is_(True),
                 Promotion.start_date <= now,
                 Promotion.end_date   >= now,
             )
@@ -216,17 +215,17 @@ async def list_leads(
     return {
         "leads": [
             {
-                "id":            str(l.id),
-                "session_id":    l.session_id,
-                "name":          l.name,
-                "phone":         l.phone,
-                "province":      l.province,
-                "interested_in": l.interested_in,
-                "budget":        l.budget,
-                "status":        l.status.value if l.status else "new",
-                "created_at":    l.created_at.isoformat(),
+                "id":            str(lead.id),
+                "session_id":    lead.session_id,
+                "name":          lead.name,
+                "phone":         lead.phone,
+                "province":      lead.province,
+                "interested_in": lead.interested_in,
+                "budget":        lead.budget,
+                "status":        lead.status.value if lead.status else "new",
+                "created_at":    lead.created_at.isoformat(),
             }
-            for l in leads
+            for lead in leads
         ]
     }
 
@@ -344,7 +343,7 @@ async def list_promotions(
     if model:
         q = q.where((Promotion.model == model) | (Promotion.model == "ALL"))
     if province:
-        q = q.where((Promotion.province == province) | (Promotion.province == None))
+        q = q.where((Promotion.province == province) | (Promotion.province.is_(None)))
 
     result = await db.execute(q)
     promos = result.scalars().all()

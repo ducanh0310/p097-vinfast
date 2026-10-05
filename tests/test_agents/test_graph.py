@@ -6,9 +6,9 @@ from langchain_core.tools import tool
 
 from src.agents.graph import (
     CONTACT_MESSAGE,
+    _content_text,
     _omitted_promotions,
     _profile_from_tool_calls,
-    _content_text,
     _ungrounded_amounts,
     agent,
     build_graph,

@@ -15,6 +15,81 @@ from .base import BaseExtractor
 
 logger = logging.getLogger(__name__)
 
+# VinFast Official Colors Mapping (Code -> (Standard Hex, Vietnamese Name))
+VINFAST_COLOR_PALETTE: dict[str, tuple[str, str]] = {
+    "CE18": ("#FFFFFF", "Trắng Tinh Khôi (Infinity Blanc)"),
+    "CE11": ("#1A1A1A", "Đen Huyền Bí (Jet Black)"),
+    "CE1V": ("#5F6363", "Xám Tinh Tế (Zenith Grey)"),
+    "CE1W": ("#7CB3A3", "Xanh Bạc Hà (Urban Mint)"),
+    "CE2Q": ("#A31F2A", "Đỏ Năng Lượng (Solar Ruby)"),
+    "CE1M": ("#BA0C2F", "Đỏ Thẫm Quý Phái (Crimson Red)"),
+    "CE22": ("#2E4D38", "Xanh Rêu Đậm (Ivy Green)"),
+    "CE17": ("#C0C0C0", "Bạc Ánh Kim (Desat Silver)"),
+    "CE1U": ("#F5B800", "Vàng Nắng Hè (Summer Yellow)"),
+    "CE2G": ("#4A90D9", "Xanh Cổng Trời (Sky Blue)"),
+    "CE21": ("#E8A2A8", "Hồng Mơ Mộng (Rose Pink)"),
+    "CE2T": ("#D4B996", "Be Cát Tường (Be Pebble)"),
+    "CE2I": ("#20B2AA", "Xanh Ngọc Bích (Tropical Jade)"),
+    "CE2K": ("#C7737C", "Hồng Ánh Kim (Rose Metallic)"),
+    "CE32": ("#E85D04", "Cam Năng Động (Vitality Orange)"),
+    "CE33": ("#1D70B8", "Xanh Sao Trời (Starburst Blue)"),
+    "CE2J": ("#1A365D", "Xanh Đại Dương (Moonlit Ocean)"),
+    "CE2N": ("#5C4033", "Nâu Trầm Trí Tuệ (Introspective Brown)"),
+    "CE31": ("#4A5568", "Xám Tàng Hình (Stealth Gray)"),
+    "CE2O": ("#4B0082", "Tím Huyền Ảo (Mysterioso Purple)"),
+    # Dual-tone (Phối 2 màu nóc thời thượng)
+    "1821": ("#E8A2A8", "Hồng nóc Trắng (Rose Pink - Infinity Blanc Roof)"),
+    "181U": ("#F5B800", "Vàng nóc Trắng (Summer Yellow - Infinity Blanc Roof)"),
+    "181Y": ("#4A90D9", "Xanh Cổng Trời nóc Trắng (Sky Blue - Infinity Blanc Roof)"),
+    "111U": ("#F5B800", "Vàng nóc Đen (Summer Yellow - Jet Black Roof)"),
+    "182K": ("#C7737C", "Hồng Ánh Kim nóc Trắng (Rose Metallic - Infinity Blanc Roof)"),
+    "1P2K": ("#C7737C", "Hồng Ánh Kim nóc Xanh (Rose Metallic - Aqua Blue Roof)"),
+    "182I": ("#20B2AA", "Xanh Ngọc nóc Trắng (Tropical Jade - Infinity Blanc Roof)"),
+    "1U2I": ("#20B2AA", "Xanh Ngọc nóc Vàng (Tropical Jade - Summer Yellow Roof)"),
+    "182Q": ("#A31F2A", "Đỏ Ruby nóc Trắng (Solar Ruby - Infinity Blanc Roof)"),
+    "1U11": ("#1A1A1A", "Đen nóc Vàng (Jet Black - Summer Yellow Roof)"),
+    "1117": ("#C0C0C0", "Bạc Ánh Kim nóc Đen (Desat Silver - Jet Black Roof)"),
+    "1832": ("#E85D04", "Cam nóc Trắng (Vitality Orange - Infinity Blanc Roof)"),
+    "1833": ("#1D70B8", "Xanh Sao Trời nóc Trắng (Starburst Blue - Infinity Blanc Roof)"),
+    "112Q": ("#A31F2A", "Đỏ Ruby nóc Đen (Solar Ruby - Jet Black Roof)"),
+    "3111": ("#1A1A1A", "Đen nóc Xám (Jet Black - Stealth Gray Roof)"),
+    "1132": ("#E85D04", "Cam nóc Đen (Vitality Orange - Jet Black Roof)"),
+    "312O": ("#4B0082", "Tím nóc Xám (Mysterioso Purple - Stealth Gray Roof)"),
+    "171V": ("#5F6363", "Xám nóc Bạc (Zenith Grey - Desat Silver Roof)"),
+    "1V18": ("#FFFFFF", "Trắng nóc Xám (Infinity Blanc - Zenith Grey Roof)"),
+    "2927": ("#7A1C29", "Đỏ Đậm nóc Đồng (Crimson Velvet - Mystery Bronze Roof)"),
+    "2911": ("#1A1A1A", "Đen nóc Đồng (Jet Black - Mystery Bronze Roof)"),
+}
+
+
+def normalize_color_attributes(color_code: str, raw_data: dict[str, Any]) -> dict[str, Any]:
+    """Normalizes color code, hex value, Vietnamese name, and image asset."""
+    raw_label = raw_data.get("label", color_code)
+    raw_hex = raw_data.get("code", "")
+    color_roof = raw_data.get("colorRoofRefTo") or ""
+    available = raw_data.get("available", True)
+
+    image_obj = raw_data.get("image", {})
+    image_url = ""
+    if isinstance(image_obj, dict):
+        image_url = image_obj.get("absURL") or image_obj.get("url") or ""
+
+    if color_code in VINFAST_COLOR_PALETTE:
+        std_hex, vi_name = VINFAST_COLOR_PALETTE[color_code]
+    else:
+        std_hex = raw_hex if (raw_hex and raw_hex.startswith("#") and len(raw_hex) in (4, 7)) else "#888888"
+        vi_name = raw_label
+
+    return {
+        "color_code": color_code,
+        "color_name": raw_label,
+        "color_name_vi": vi_name,
+        "color_hex": std_hex,
+        "color_roof": color_roof,
+        "image_url": image_url,
+        "is_available": available,
+    }
+
 
 class RelationalExtractor(BaseExtractor):
     """Parses raw JSON snapshot of vehicle prices, editions, and rolling costs."""
@@ -96,14 +171,66 @@ class RelationalExtractor(BaseExtractor):
         detail = vehicles_container.get(model_id, {})
 
         editions = detail.get("listEdition", [])
+        if not editions and "null" in detail:
+            editions = ["null"]
+
         trims: list[dict[str, Any]] = []
+        model_colors_map: dict[str, dict[str, Any]] = {}
+        model_interiors_map: dict[str, dict[str, Any]] = {}
 
         for ed_code in editions:
             ed_data = detail.get(ed_code, {})
-            label = ed_data.get("label", ed_code)
+            label = ed_data.get("label") or ed_code
+            if label == "null":
+                label = "Tiêu chuẩn"
+
             price_str = ed_data.get("price", "0")
             price_val = ed_data.get("priceValue", 0)
             price_battery = ed_data.get("priceWithBattery", price_val)
+
+            # Extract color options for this trim
+            color_codes = ed_data.get("listColor", [])
+            trim_colors: list[dict[str, Any]] = []
+            for c_code in color_codes:
+                c_data = ed_data.get(c_code)
+                if isinstance(c_data, dict):
+                    color_item = normalize_color_attributes(c_code, c_data)
+                    color_item["trim_code"] = ed_code
+                    color_item["trim_name"] = label
+                    trim_colors.append(color_item)
+
+                    if c_code not in model_colors_map:
+                        model_colors_map[c_code] = dict(color_item)
+                        model_colors_map[c_code]["supported_trims"] = [label]
+                    else:
+                        if label not in model_colors_map[c_code]["supported_trims"]:
+                            model_colors_map[c_code]["supported_trims"].append(label)
+
+            # Extract interior options for this trim
+            interior_codes = ed_data.get("listInterior", [])
+            for i_code in interior_codes:
+                if not i_code:
+                    continue
+                i_label = ""
+                i_img = ""
+                for c_code in color_codes:
+                    c_data = ed_data.get(c_code, {})
+                    if isinstance(c_data, dict) and i_code in c_data and isinstance(c_data[i_code], dict):
+                        i_label = c_data[i_code].get("label", "")
+                        i_img = c_data[i_code].get("image", "")
+                        if i_label:
+                            break
+
+                if i_code not in model_interiors_map:
+                    model_interiors_map[i_code] = {
+                        "interior_code": i_code,
+                        "interior_name": i_label or i_code,
+                        "image_url": i_img,
+                        "supported_trims": [label],
+                    }
+                else:
+                    if label not in model_interiors_map[i_code]["supported_trims"]:
+                        model_interiors_map[i_code]["supported_trims"].append(label)
 
             trims.append({
                 "trim_code": ed_code,
@@ -111,6 +238,7 @@ class RelationalExtractor(BaseExtractor):
                 "price_vnd": price_str,
                 "price_value": price_val,
                 "price_with_battery": price_battery,
+                "colors": trim_colors,
             })
 
         # Calculate estimated rolling cost ranges based on license fees
@@ -147,6 +275,28 @@ class RelationalExtractor(BaseExtractor):
         else:
             md_lines.append("- Liên hệ đại lý hoặc xem thông báo giá mới nhất.")
 
+        # Add Color Palette section
+        all_colors = list(model_colors_map.values())
+        if all_colors:
+            md_lines.append("")
+            md_lines.append("### Bảng màu sắc ngoại thất chính hãng:")
+            md_lines.append("| Mã màu | Tên màu ngoại thất | Tên thương mại tiếng Anh | Mã Hex | Phiên bản hỗ trợ |")
+            md_lines.append("|---|---|---|---|---|")
+            for c in all_colors:
+                trims_str = ", ".join(c.get("supported_trims", [])) or "Tất cả"
+                md_lines.append(
+                    f"| `{c['color_code']}` | {c['color_name_vi']} | {c['color_name']} | `{c['color_hex']}` | {trims_str} |"
+                )
+
+        # Add Interior Colors section
+        all_interiors = list(model_interiors_map.values())
+        if all_interiors:
+            md_lines.append("")
+            md_lines.append("### Tùy chọn màu nội thất:")
+            for inter in all_interiors:
+                trims_str = ", ".join(inter.get("supported_trims", [])) or "Tất cả"
+                md_lines.append(f"- **{inter['interior_name']}** (Mã: `{inter['interior_code']}`) - Áp dụng cho: {trims_str}")
+
         md_lines.append("")
         md_lines.append("### Lệ phí đăng ký và biển số tham khảo:")
         md_lines.append("- Khu vực 1 (Hà Nội, TP.HCM): 20.000.000 VNĐ (ô tô) / 1.000.000 - 4.000.000 VNĐ (xe máy)")
@@ -165,6 +315,8 @@ class RelationalExtractor(BaseExtractor):
             promotions=[],
             rolling_costs=rolling_costs,
             searchable_markdown=searchable_md,
+            colors=all_colors,
+            interior_colors=all_interiors,
         )
 
     def get_relational_tables(self, cars_only: bool = False) -> dict[str, list[dict[str, Any]]]:
@@ -350,9 +502,53 @@ class RelationalExtractor(BaseExtractor):
                     "snapshot_datetime": snapshot_dt,
                 })
 
+        # 6. Vehicle Colors Catalog
+        vehicle_colors: list[dict[str, Any]] = []
+        target_groups = [("cars", "Electric Car")]
+        if not cars_only:
+            target_groups.append(("bikes", "Electric Bike"))
+
+        for group_key, v_type in target_groups:
+            group_data = vehicles_data.get(group_key, {})
+            for m in group_data.get("models", []):
+                c_id = m.get("id", "")
+                c_name = m.get("name", "")
+                detail = group_data.get(c_id, {})
+                editions = detail.get("listEdition", [])
+                if not editions and "null" in detail:
+                    editions = ["null"]
+
+                for ed_code in editions:
+                    ed_data = detail.get(ed_code, {})
+                    trim_label = ed_data.get("label") or ed_code
+                    if trim_label == "null":
+                        trim_label = "Tiêu chuẩn"
+
+                    color_codes = ed_data.get("listColor", [])
+                    for c_code in color_codes:
+                        c_data = ed_data.get(c_code)
+                        if isinstance(c_data, dict):
+                            norm = normalize_color_attributes(c_code, c_data)
+                            vehicle_colors.append({
+                                "car_id": c_id,
+                                "car_name": c_name,
+                                "vehicle_type": v_type,
+                                "trim_code": ed_code,
+                                "trim_name": trim_label,
+                                "color_code": norm["color_code"],
+                                "color_name": norm["color_name"],
+                                "color_name_vi": norm["color_name_vi"],
+                                "color_hex": norm["color_hex"],
+                                "color_roof": norm["color_roof"],
+                                "image_url": norm["image_url"],
+                                "is_available": norm["is_available"],
+                                "snapshot_datetime": snapshot_dt,
+                            })
+
         return {
             "cars_catalog": cars_catalog,
             "trims_pricing": trims_pricing,
+            "vehicle_colors": vehicle_colors,
             "provinces": provinces,
             "fee_rules": fee_rules,
             "rolling_cost_matrix": rolling_matrix,
