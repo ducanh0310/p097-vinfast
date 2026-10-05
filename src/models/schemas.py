@@ -1,19 +1,18 @@
+from typing import Any
+
 from pydantic import BaseModel, Field
-from typing import Optional, List, Any
-from datetime import datetime
-from uuid import UUID
 
 
 # ── Chat ─────────────────────────────────────────────────────
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=5000)
-    session_id: Optional[str] = None
-    vehicle_context: Optional[dict[str, Any]] = None
+    session_id: str | None = None
+    vehicle_context: dict[str, Any] | None = None
 
 class ChatResponse(BaseModel):
     response: str
-    analysis: Optional[str] = None
-    session_id: Optional[str] = None
+    analysis: str | None = None
+    session_id: str | None = None
 
 
 # ── Auth ─────────────────────────────────────────────────────
@@ -33,14 +32,14 @@ class ConfigRequest(BaseModel):
     color:       str
     battery:     str  # "buy" | "rent"
     province:    str
-    accessories: List[str] = []
+    accessories: list[str] = []
 
 class PricingResponse(BaseModel):
     base_price:      int
     battery_cost:    int
-    accessories:     List[dict]
+    accessories:     list[dict]
     rolling_costs:   dict
-    promotions:      List[dict]
+    promotions:      list[dict]
     total_discount:  int
     final_price:     int
     province:        str
@@ -54,24 +53,24 @@ class LeadCreate(BaseModel):
     session_id:    str
     name:          str
     phone:         str
-    province:      Optional[str] = None
-    interested_in: Optional[str] = None
-    budget:        Optional[int] = None
-    note:          Optional[str] = None
+    province:      str | None = None
+    interested_in: str | None = None
+    budget:        int | None = None
+    note:          str | None = None
 
 class LeadUpdate(BaseModel):
-    status:      Optional[str] = None
-    assigned_to: Optional[str] = None
-    note:        Optional[str] = None
+    status:      str | None = None
+    assigned_to: str | None = None
+    note:        str | None = None
 
 class LeadOut(BaseModel):
     id:            str
     session_id:    str
-    name:          Optional[str]
-    phone:         Optional[str]
-    province:      Optional[str]
-    interested_in: Optional[str]
-    budget:        Optional[int]
+    name:          str | None
+    phone:         str | None
+    province:      str | None
+    interested_in: str | None
+    budget:        int | None
     status:        str
     created_at:    str
 
@@ -89,30 +88,30 @@ class QuoteCreate(BaseModel):
     color:          str
     battery:        str
     province:       str
-    accessories:    List[str] = []
+    accessories:    list[str] = []
     price_snapshot: dict
     price_version:  str
     final_price:    int
 
 class QuoteApprove(BaseModel):
     action:      str   # "approve" | "reject"
-    seller_note: Optional[str] = None
+    seller_note: str | None = None
 
 class QuoteOut(BaseModel):
     id:             str
-    buyer_name:     Optional[str]
-    buyer_phone:    Optional[str]
-    model:          Optional[str]
-    version:        Optional[str]
-    color:          Optional[str]
-    province:       Optional[str]
+    buyer_name:     str | None
+    buyer_phone:    str | None
+    model:          str | None
+    version:        str | None
+    color:          str | None
+    province:       str | None
     final_price:    int
     price_version:  str
     status:         str
-    seller_note:    Optional[str]
-    pdf_url:        Optional[str]
+    seller_note:    str | None
+    pdf_url:        str | None
     created_at:     str
-    reviewed_at:    Optional[str]
+    reviewed_at:    str | None
 
     class Config:
         from_attributes = True
@@ -121,9 +120,9 @@ class QuoteOut(BaseModel):
 # ── Promotions ────────────────────────────────────────────────
 class PromotionCreate(BaseModel):
     name:           str
-    description:    Optional[str] = None
+    description:    str | None = None
     model:          str = "ALL"
-    province:       Optional[str] = None
+    province:       str | None = None
     discount_type:  str   # "fixed" | "percent"
     discount_value: int
     start_date:     str
@@ -133,9 +132,9 @@ class PromotionCreate(BaseModel):
 class PromotionOut(BaseModel):
     id:             str
     name:           str
-    description:    Optional[str]
+    description:    str | None
     model:          str
-    province:       Optional[str]
+    province:       str | None
     discount_type:  str
     discount_value: int
     start_date:     str
@@ -150,16 +149,16 @@ class PromotionOut(BaseModel):
 # ── Inventory ─────────────────────────────────────────────────
 class InventoryUpdate(BaseModel):
     quantity:     int
-    est_delivery: Optional[str] = None
+    est_delivery: str | None = None
 
 class InventoryOut(BaseModel):
     id:           str
     model:        str
     version:      str
     color:        str
-    color_hex:    Optional[str]
+    color_hex:    str | None
     quantity:     int
-    est_delivery: Optional[str]
+    est_delivery: str | None
     updated_at:   str
 
     class Config:

@@ -1,7 +1,8 @@
 """Tests for vehicle color and configuration extraction in RelationalExtractor."""
 
 from pathlib import Path
-from src.pipeline.extractors.relational_extractor import RelationalExtractor, VINFAST_COLOR_PALETTE
+
+from src.pipeline.extractors.relational_extractor import RelationalExtractor
 
 
 def test_vehicle_colors_extracted():

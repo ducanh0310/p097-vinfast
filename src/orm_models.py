@@ -1,41 +1,54 @@
+import enum
 import uuid
 from datetime import datetime
+
 from sqlalchemy import (
-    Column, String, BigInteger, Float, Boolean,
-    DateTime, Text, Integer, ARRAY, JSON,
-    ForeignKey, Enum as SAEnum,
+    ARRAY,
+    JSON,
+    BigInteger,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy import (
+    Enum as SAEnum,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+
 from src.db import Base
-import enum
 
 
 # ── Enums ────────────────────────────────────────────────────
-class UserRole(str, enum.Enum):
+class UserRole(enum.StrEnum):
     buyer     = "buyer"
     seller    = "seller"
     warehouse = "warehouse"
     admin     = "admin"
 
-class QuoteStatus(str, enum.Enum):
+class QuoteStatus(enum.StrEnum):
     pending  = "pending"
     approved = "approved"
     rejected = "rejected"
     expired  = "expired"
 
-class LeadStatus(str, enum.Enum):
+class LeadStatus(enum.StrEnum):
     new          = "new"
     contacted    = "contacted"
     quoted       = "quoted"
     closed_won   = "closed_won"
     closed_lost  = "closed_lost"
 
-class DiscountType(str, enum.Enum):
+class DiscountType(enum.StrEnum):
     fixed   = "fixed"
     percent = "percent"
 
-class BatteryOption(str, enum.Enum):
+class BatteryOption(enum.StrEnum):
     buy  = "buy"
     rent = "rent"
 
