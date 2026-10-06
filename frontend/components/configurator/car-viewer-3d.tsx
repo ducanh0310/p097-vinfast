@@ -201,9 +201,8 @@ export function CarViewer3D({
       // Góc nhìn hiệu dụng là góc nhỏ hơn giữa dọc và ngang
       const effectiveFov = Math.min(fovY, fovX);
 
-      // Khoảng cách bao trọn toàn bộ xe kèm padding an toàn (1.45)
-      // Đảm bảo cả mobile portrait và desktop widescreen đều thấy trọn vẹn 100% chiếc xe
-      const distance = (radius / Math.sin(effectiveFov / 2)) * 1.45;
+      // Khoảng cách bao trọn toàn bộ xe vừa vặn, to đẹp và rõ nét (hệ số 1.08)
+      const distance = (radius / Math.sin(effectiveFov / 2)) * 1.08;
 
       // Hướng góc chéo trước bên trái (Front 3/4 view kiểu showroom Tesla)
       const viewDir = new THREE.Vector3(1.15, 0.35, 1.1).normalize();
@@ -439,32 +438,32 @@ export function CarViewer3D({
       )}
 
       {/* Bộ điều khiển tối giản ở góc dưới bên phải */}
-      <div className="absolute bottom-4 right-5 z-20 flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-md">
+      <div className="absolute bottom-2.5 right-3 z-20 flex items-center gap-1 rounded-full border border-slate-200/80 bg-white/80 p-0.5 shadow-sm backdrop-blur-md xl:bottom-4 xl:right-5 xl:p-1">
         <button
           type="button"
           onClick={() => setAutoRotate((prev) => !prev)}
           title={autoRotate ? "Tạm dừng tự xoay" : "Bật tự xoay 360°"}
-          className={`flex h-8 w-8 items-center justify-center rounded-full text-xs transition ${
+          className={`flex h-7 w-7 items-center justify-center rounded-full text-xs transition xl:h-8 xl:w-8 ${
             autoRotate
               ? "bg-slate-900 text-white"
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
-          {autoRotate ? <Pause size={13} /> : <Play size={13} />}
+          {autoRotate ? <Pause size={12} /> : <Play size={12} />}
         </button>
 
         <button
           type="button"
           onClick={handleResetCamera}
           title="Đặt lại góc nhìn xe"
-          className="flex h-8 w-8 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 xl:h-8 xl:w-8"
         >
-          <RotateCcw size={13} />
+          <RotateCcw size={12} />
         </button>
       </div>
 
       {/* Gợi ý nhẹ nhàng dưới đáy */}
-      <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2 text-[11px] font-medium text-slate-400">
+      <div className="pointer-events-none absolute bottom-2 left-1/2 z-10 -translate-x-1/2 text-[10px] font-medium text-slate-400 xl:bottom-4 xl:text-[11px]">
         Xoay 360° để xem mọi góc cạnh
       </div>
     </div>

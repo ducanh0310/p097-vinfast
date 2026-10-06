@@ -65,33 +65,33 @@ function Customize() {
       <SiteNav />
       <Stepper current={1} query={query} />
       <main className="min-h-0 flex-1 overflow-y-auto xl:grid xl:grid-cols-[minmax(0,1fr)_380px_380px] xl:grid-rows-1 xl:overflow-hidden">
-        {/* CỘT 1: LẤY TOÀN BỘ KHÔNG GIAN ĐỂ HIỂN THỊ XE 3D LIỀN MẠCH */}
-        <section className="relative flex h-[50vh] sm:h-[56vh] xl:h-full w-full flex-1 flex-col overflow-hidden bg-white p-0">
+        {/* CỘT 1: HIỂN THỊ XE 3D - TRÊN MOBILE GHIM 1/3 MÀN HÌNH (STICKY), TRÊN DESKTOP GIỮ NGUYÊN TOÀN BỘ KHÔNG GIAN */}
+        <section className="sticky top-0 z-30 flex h-[34dvh] w-full shrink-0 flex-col overflow-hidden border-b border-slate-100 bg-white p-0 shadow-sm xl:relative xl:top-auto xl:z-auto xl:h-full xl:flex-1 xl:border-b-0 xl:shadow-none">
           {/* Thông tin dòng xe thanh lịch ở góc trên */}
-          <div className="pointer-events-auto absolute left-6 top-5 right-6 z-20 flex items-start justify-between">
+          <div className="pointer-events-auto absolute left-4 top-3 right-4 z-20 flex items-start justify-between xl:left-8 xl:top-7 xl:right-8">
             <div>
               <Link
                 href="/configurator"
-                className="group mb-1.5 inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900"
+                className="group mb-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-slate-900 xl:mb-1.5 xl:text-xs"
               >
-                <ChevronLeft size={14} className="transition group-hover:-translate-x-0.5" />
+                <ChevronLeft size={13} className="transition group-hover:-translate-x-0.5" />
                 <span>Đổi dòng xe khác</span>
               </Link>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
+              <h1 className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl md:text-2xl xl:text-3xl">
                 VinFast {v.label}
               </h1>
             </div>
-            <span className="rounded-full bg-slate-100/90 px-3 py-1 text-xs font-semibold text-slate-600 backdrop-blur-sm shadow-sm">
+            <span className="rounded-full bg-slate-100/90 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 backdrop-blur-sm shadow-sm xl:px-3 xl:py-1 xl:text-xs">
               {pricing.version.label}
             </span>
           </div>
 
           {/* Chữ chìm nghệ thuật phía sau */}
-          <span className="pointer-events-none absolute left-6 top-10 select-none text-[120px] font-black leading-none text-slate-100/60 md:text-[200px]">
+          <span className="pointer-events-none absolute left-8 top-14 select-none text-[80px] font-black leading-none text-slate-100/50 hidden sm:block md:text-[140px] xl:block xl:text-[200px]">
             {v.label.replace(" ", "")}
           </span>
 
-          {/* Xe 3D Three.js chiếm toàn bộ 100% không gian Cột 1 */}
+          {/* Xe 3D Three.js chiếm toàn bộ không gian của Cột 1 */}
           <div className="relative z-10 h-full w-full flex-1">
             <CarViewer3D
               modelUrl={v.model3d}
@@ -224,19 +224,35 @@ function Customize() {
         </aside>
       </main>
 
-      {/* THANH TỔNG TIỀN DƯỚI ĐÁY */}
-      <div className="flex-none border-t border-slate-200 bg-white px-5 py-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))]">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-          <div>
-            <p className="text-xs text-slate-500">Giá lăn bánh dự tính, đã trừ ưu đãi</p>
-            <p className="text-2xl font-bold text-slate-900">{formatNumber(pricing.finalPrice)}đ</p>
+      {/* THANH TỔNG TIỀN DƯỚI ĐÁY - GIÃN SÁT 2 VIỀN, CẢ GIÁ VÀ NÚT CÙNG Ở BÊN PHẢI TRÊN DESKTOP */}
+      <div className="flex-none border-t border-slate-200 bg-white px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))] sm:px-6 xl:px-10">
+        <div className="flex w-full items-center justify-between">
+          {/* Phía bên trái desktop: tóm tắt thông tin */}
+          <div className="hidden xl:flex items-center gap-3 text-xs text-slate-500">
+            <span className="font-semibold text-slate-800">VinFast {v.label} {pricing.version.label}</span>
+            <span>·</span>
+            <span>{pricing.color.label}</span>
+            <span>·</span>
+            <span className="font-medium text-emerald-600">Bảo hành 10 năm</span>
           </div>
-          <Link
-            href={`/configurator/quote?${query}`}
-            className="rounded-full bg-blue-600 px-8 py-3.5 font-semibold text-white hover:bg-blue-700"
-          >
-            Xem báo giá chi tiết
-          </Link>
+
+          {/* Phía bên phải: Cả cụm Giá bán + Nút xem báo giá cùng dồn sát ra phía bên phải */}
+          <div className="flex w-full items-center justify-between gap-3 xl:w-auto xl:justify-end xl:gap-6">
+            <div className="text-left xl:text-right">
+              <p className="text-xs font-medium text-slate-500">
+                Giá lăn bánh dự tính, đã trừ ưu đãi
+              </p>
+              <p className="mt-0.5 text-xl font-bold leading-tight text-slate-900 sm:text-2xl xl:text-2xl">
+                {formatNumber(pricing.finalPrice)}đ
+              </p>
+            </div>
+            <Link
+              href={`/configurator/quote?${query}`}
+              className="shrink-0 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 xl:px-8 xl:py-3.5 xl:text-base"
+            >
+              Xem báo giá chi tiết
+            </Link>
+          </div>
         </div>
       </div>
 
