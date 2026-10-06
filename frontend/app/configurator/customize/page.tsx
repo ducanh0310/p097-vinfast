@@ -225,8 +225,8 @@ function Customize() {
       </main>
 
       {/* THANH TỔNG TIỀN DƯỚI ĐÁY - GIÃN SÁT 2 VIỀN, CẢ GIÁ VÀ NÚT CÙNG Ở BÊN PHẢI TRÊN DESKTOP */}
-      <div className="flex-none border-t border-slate-200 bg-white px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))] sm:px-6 xl:px-10">
-        <div className="flex w-full items-center justify-between">
+      <div className="flex-none border-t border-slate-200 bg-white px-3 py-2.5 pb-[calc(10px+env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-3 xl:px-10">
+        <div className="flex w-full items-center justify-between gap-2 sm:gap-4">
           {/* Phía bên trái desktop: tóm tắt thông tin */}
           <div className="hidden xl:flex items-center gap-3 text-xs text-slate-500">
             <span className="font-semibold text-slate-800">VinFast {v.label} {pricing.version.label}</span>
@@ -237,20 +237,22 @@ function Customize() {
           </div>
 
           {/* Phía bên phải: Cả cụm Giá bán + Nút xem báo giá cùng dồn sát ra phía bên phải */}
-          <div className="flex w-full items-center justify-between gap-3 xl:w-auto xl:justify-end xl:gap-6">
-            <div className="text-left xl:text-right">
-              <p className="text-xs font-medium text-slate-500">
-                Giá lăn bánh dự tính, đã trừ ưu đãi
+          <div className="flex w-full items-center justify-between gap-2 sm:gap-4 xl:w-auto xl:justify-end xl:gap-6">
+            <div className="min-w-0 text-left xl:text-right">
+              <p className="truncate text-[11px] font-medium text-slate-500 sm:text-xs">
+                <span className="sm:hidden">Dự tính lăn bánh</span>
+                <span className="hidden sm:inline">Giá lăn bánh dự tính, đã trừ ưu đãi</span>
               </p>
-              <p className="mt-0.5 text-xl font-bold leading-tight text-slate-900 sm:text-2xl xl:text-2xl">
+              <p className="mt-0.5 text-lg font-bold leading-tight text-slate-900 sm:text-2xl xl:text-2xl">
                 {formatNumber(pricing.finalPrice)}đ
               </p>
             </div>
             <Link
               href={`/configurator/quote?${query}`}
-              className="shrink-0 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 xl:px-8 xl:py-3.5 xl:text-base"
+              className="shrink-0 rounded-full bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-700 sm:px-6 sm:py-3 sm:text-sm xl:px-8 xl:py-3.5 xl:text-base whitespace-nowrap shadow-sm"
             >
-              Xem báo giá chi tiết
+              <span className="sm:hidden">Xem báo giá</span>
+              <span className="hidden sm:inline">Xem báo giá chi tiết</span>
             </Link>
           </div>
         </div>
@@ -259,9 +261,9 @@ function Customize() {
       {/* NÚT HỎI TRỢ LÝ TRÊN MÀN HÌNH NHỎ */}
       <button
         onClick={() => setChatOpen(true)}
-        className="fixed bottom-24 right-5 z-40 flex items-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-lg xl:hidden"
+        className="fixed bottom-20 right-4 z-40 flex items-center gap-1.5 rounded-full bg-slate-900/95 backdrop-blur-sm px-4 py-2.5 text-xs font-semibold text-white shadow-lg transition hover:bg-slate-800 sm:bottom-24 sm:right-5 sm:px-5 sm:py-3 sm:text-sm xl:hidden"
       >
-        <MessageCircle size={18} />
+        <MessageCircle size={16} />
         Hỏi trợ lý
       </button>
     </div>

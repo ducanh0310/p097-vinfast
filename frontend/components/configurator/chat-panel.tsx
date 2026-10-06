@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { Send, Bot } from "lucide-react";
+import { Send, Bot, Car } from "lucide-react";
 import { useChat } from "@/hooks/use-chat";
 import { useConfigurator } from "@/hooks/use-configurator";
 import { VEHICLES } from "@/lib/vehicle-data";
@@ -74,8 +74,9 @@ export function ChatPanel({ chat, configurator }: Props) {
 
         {/* Context chip — hiện xe đang xem */}
         <div className="mt-3 px-3 py-2 bg-blue-50 rounded-xl border border-blue-100 text-xs text-blue-700 flex justify-between items-center">
-          <span>
-            🚗 {config.model} {pricing.version.label} · {pricing.province.label}
+          <span className="flex items-center gap-1.5">
+            <Car size={14} className="text-blue-600 shrink-0" />
+            <span>{config.model} {pricing.version.label} · {pricing.province.label}</span>
           </span>
           <span className="font-semibold">{formatVND(pricing.finalPrice)}</span>
         </div>
@@ -147,7 +148,7 @@ function EmptyState() {
         <Bot size={28} className="text-blue-600" />
       </div>
       <div>
-        <p className="font-semibold text-gray-800 text-sm">Xin chào! 👋</p>
+        <p className="font-semibold text-gray-800 text-sm">Xin chào!</p>
         <p className="text-xs text-gray-500 mt-1 max-w-[200px] leading-relaxed">
           Hỏi tôi bất cứ điều gì về xe bạn đang xem, tôi sẽ tư vấn ngay!
         </p>

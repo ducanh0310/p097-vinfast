@@ -2,6 +2,7 @@
 
 import { PriceQuoteData, InstallmentData } from "@/types/chat";
 import { formatVND } from "@/lib/format";
+import { Gift, Info, CheckCircle2, FileDown } from "lucide-react";
 
 type QuoteData = PriceQuoteData | InstallmentData;
 
@@ -32,8 +33,9 @@ function PriceQuoteSidebar({ data }: { data: PriceQuoteData }) {
             {formatVND(data.final_price)}
           </p>
           {data.total_discount > 0 && (
-            <p className="text-xs text-green-600 font-medium mt-1">
-              🎁 Đang tiết kiệm {formatVND(data.total_discount)}
+            <p className="text-xs text-green-600 font-medium mt-1 flex items-center gap-1">
+              <Gift size={12} className="shrink-0" />
+              <span>Đang tiết kiệm {formatVND(data.total_discount)}</span>
             </p>
           )}
         </div>
@@ -58,8 +60,11 @@ function PriceQuoteSidebar({ data }: { data: PriceQuoteData }) {
           {data.promotions.length > 0 && (
             <div className="border-t pt-2 space-y-1.5">
               {data.promotions.map((p) => (
-                <div key={p.name} className="flex justify-between text-green-700 text-xs">
-                  <span className="flex-1 pr-2">🎁 {p.name}</span>
+                <div key={p.name} className="flex justify-between text-green-700 text-xs items-center">
+                  <span className="flex-1 pr-2 flex items-center gap-1">
+                    <Gift size={11} className="shrink-0" />
+                    <span>{p.name}</span>
+                  </span>
                   <span>-{formatVND(p.value)}</span>
                 </div>
               ))}
@@ -67,17 +72,20 @@ function PriceQuoteSidebar({ data }: { data: PriceQuoteData }) {
           )}
         </div>
 
-        <p className="text-xs text-gray-400 bg-gray-50 rounded-lg p-3 leading-relaxed">
-          ⚠️ {data.disclaimer}
+        <p className="text-xs text-gray-400 bg-gray-50 rounded-lg p-3 leading-relaxed flex items-start gap-1.5">
+          <Info size={13} className="shrink-0 mt-0.5 text-gray-400" />
+          <span>{data.disclaimer}</span>
         </p>
       </div>
 
       <div className="px-5 py-4 border-t space-y-2">
-        <button className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors">
-          ✅ Yêu cầu báo giá chính thức
+        <button className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors flex items-center justify-center gap-2">
+          <CheckCircle2 size={15} />
+          <span>Yêu cầu báo giá chính thức</span>
         </button>
-        <button className="w-full py-2.5 rounded-xl border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium text-sm transition-colors">
-          📄 Xuất PDF
+        <button className="w-full py-2.5 rounded-xl border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium text-sm transition-colors flex items-center justify-center gap-2">
+          <FileDown size={15} />
+          <span>Xuất PDF</span>
         </button>
       </div>
     </div>
@@ -138,8 +146,9 @@ function InstallmentSidebar({ data }: { data: InstallmentData }) {
           </table>
         </div>
 
-        <p className="text-xs text-gray-400 bg-gray-50 rounded-lg p-3">
-          ⚠️ {data.disclaimer}
+        <p className="text-xs text-gray-400 bg-gray-50 rounded-lg p-3 flex items-start gap-1.5">
+          <Info size={13} className="shrink-0 mt-0.5 text-gray-400" />
+          <span>{data.disclaimer}</span>
         </p>
       </div>
     </div>
