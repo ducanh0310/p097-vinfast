@@ -94,6 +94,7 @@ async def list_vehicles(db: AsyncSession = Depends(get_db)):
         "Đen Huyền Bí": "black",
         "Đỏ Năng Lượng": "red",
         "Xanh Bạc Hà": "mint",
+        "Xanh Lá Nhạt": "mint",
         "Xám Tinh Tế": "grey",
         "Bạc Ánh Kim": "silver",
         "Xanh Cổng Trời": "blue",
@@ -141,9 +142,12 @@ async def list_vehicles(db: AsyncSession = Depends(get_db)):
                 "id": cid,
                 "label": r.color,
                 "hex": r.color_hex,
+                "roof_hex": getattr(r, "roof_hex", None) or r.color_hex,
+                "roofHex": getattr(r, "roof_hex", None) or r.color_hex,
                 "image_url": r.image_url or "",
                 "imageUrl": r.image_url or "",
             })
+
 
 
     return {"vehicles": vehicles}

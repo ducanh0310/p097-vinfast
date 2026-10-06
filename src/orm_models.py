@@ -98,7 +98,9 @@ class VehiclePrice(Base):
     effective_from = Column(DateTime,    nullable=False)
     effective_to   = Column(DateTime,    nullable=True)
     image_url      = Column(String(500), nullable=True)
+    roof_hex       = Column(String(7),   nullable=True)
     created_at     = Column(DateTime,    default=datetime.utcnow)
+
 
 
 

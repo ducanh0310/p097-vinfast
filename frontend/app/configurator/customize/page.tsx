@@ -97,6 +97,7 @@ function Customize() {
               modelUrl={v.model3d}
               modelName={v.label}
               colorHex={pricing.color.hex}
+              roofHex={(pricing.color as any)?.roofHex || (pricing.color as any)?.roof_hex || pricing.color.hex}
               className="h-full w-full"
               fallback2D={
                 <CarImage
@@ -134,20 +135,28 @@ function Customize() {
               <span className="text-xs text-slate-400">Đã bao gồm trong giá</span>
             </div>
             <div className="flex flex-wrap gap-3 py-1">
-              {v.colors.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setField("colorId", c.id)}
-                  aria-label={c.label}
-                  title={c.label}
-                  className={`h-10 w-10 rounded-full border border-slate-300 transition-all ${
-                    c.id === config.colorId
-                      ? "scale-110 shadow-md ring-2 ring-blue-600 ring-offset-2"
-                      : "hover:scale-105 hover:border-slate-400"
-                  }`}
-                  style={{ backgroundColor: c.hex }}
-                />
-              ))}
+              {v.colors.map((c: any) => {
+                const roof = c.roofHex || c.roof_hex;
+                const isTwoTone = Boolean(roof && roof.toLowerCase() !== c.hex.toLowerCase());
+                const swatchBackground = isTwoTone
+                  ? `linear-gradient(135deg, ${c.hex} 50%, ${roof} 50%)`
+                  : c.hex;
+
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setField("colorId", c.id)}
+                    aria-label={c.label}
+                    title={c.label}
+                    className={`h-10 w-10 rounded-full border border-slate-300 transition-all ${
+                      c.id === config.colorId
+                        ? "scale-110 shadow-md ring-2 ring-blue-600 ring-offset-2"
+                        : "hover:scale-105 hover:border-slate-400"
+                    }`}
+                    style={{ background: swatchBackground }}
+                  />
+                );
+              })}
             </div>
           </Group>
 

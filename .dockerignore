@@ -31,4 +31,4 @@ Dockerfile
 docker-compose.yml
 *.log
 logs/
-
+scratch/

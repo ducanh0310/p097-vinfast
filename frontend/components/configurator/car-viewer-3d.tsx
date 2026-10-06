@@ -14,6 +14,8 @@ interface CarViewer3DProps {
   modelName: string;
   /** Màu hex đang chọn (ví dụ: #FFFFFF, #1a1a1a, ...) */
   colorHex?: string;
+  /** Màu nóc xe cho các phiên bản two-tone (nóc trắng, nóc đen, ...) */
+  roofHex?: string;
   /** Component fallback 2D hiển thị khi không có model 3D */
   fallback2D?: React.ReactNode;
   className?: string;
@@ -23,6 +25,7 @@ export function CarViewer3D({
   modelUrl,
   modelName,
   colorHex,
+  roofHex,
   fallback2D,
   className = "",
 }: CarViewer3DProps) {
@@ -37,12 +40,82 @@ export function CarViewer3D({
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const carPaintMaterialsRef = useRef<THREE.MeshStandardMaterial[]>([]);
+  const carRoofMaterialsRef = useRef<THREE.MeshStandardMaterial[]>([]);
+  const vf8MeshesRef = useRef<THREE.Mesh[]>([]);
   const modelRadiusRef = useRef<number>(2.5);
 
   const defaultCamPos = useRef(new THREE.Vector3(5.0, 1.2, 5.0));
   const defaultTarget = useRef(new THREE.Vector3(0, 0.45, 0));
 
   const hasModel = Boolean(modelUrl && modelUrl.trim() !== "");
+
+  // Hàm tô màu 2 tông (Upper Body / Roof / Hood vs Lower Body) cho VF8 bằng Vertex Colors
+  const applyVF8Colors = useCallback(
+    (mesh: THREE.Mesh, bodyHex?: string, roofHex?: string) => {
+      const geom = mesh.geometry;
+      if (!geom || !geom.attributes.position) return;
+      const pos = geom.attributes.position;
+      const count = pos.count;
+
+      const bodyCol = new THREE.Color(bodyHex || "#FFFFFF");
+      const targetRoof = roofHex || bodyHex || "#FFFFFF";
+      const roofCol = new THREE.Color(targetRoof);
+      const taillightCavityCol = new THREE.Color("#300505"); // Nền hốc đèn hậu màu đỏ sẫm chống lem màu vỏ xe
+      const isTwoTone = targetRoof.toLowerCase() !== (bodyHex || "#FFFFFF").toLowerCase();
+
+      let colAttr = geom.attributes.color as THREE.BufferAttribute | undefined;
+      if (!colAttr || colAttr.count !== count) {
+        const colors = new Float32Array(count * 3);
+        colAttr = new THREE.BufferAttribute(colors, 3);
+        geom.setAttribute("color", colAttr);
+      }
+
+      const colors = colAttr.array as Float32Array;
+
+      for (let i = 0; i < count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+
+        // Bảo vệ hốc đèn hậu: Luôn giữ nền đỏ sẫm nguyên bản, không bao giờ nhận màu sơn xe
+        const isTaillightCavity =
+          z >= 21.4 && y >= 8.2 && y <= 9.8 && Math.abs(x) <= 8.5;
+
+        if (isTaillightCavity) {
+          colors[i * 3] = taillightCavityCol.r;
+          colors[i * 3 + 1] = taillightCavityCol.g;
+          colors[i * 3 + 2] = taillightCavityCol.b;
+          continue;
+        }
+
+        // Phân loại nửa trên (Nóc xe, mui xe, nắp capo, cột trụ A-B-C, phần đuôi dưới kính) theo chuẩn hai tông VinFast VF8 LUX:
+        // 1. Toàn bộ mui nóc xe và vòm mui ở Y >= 12.8
+        // 2. Cột trụ A, B, C, mui viền kính ở Z in [-7.5, 15.0] với Y >= 10.6 và |X| <= 8.9
+        // 3. Toàn bộ nắp capo phía trước ở Z <= -7.5 với Y >= (7.05 + (z + 24.1) * 0.155) và |X| <= 8.85
+        // 4. Phần đuôi dưới kính sau trên đèn hậu ở Z in [15.0, 21.6] với Y >= 9.8 và |X| <= 8.7
+        const isRoof =
+          isTwoTone &&
+          (y >= 12.8 ||
+            (z > -7.5 && z < 15.0 && y >= 10.6 && Math.abs(x) <= 8.9) ||
+            (z <= -7.5 && y >= (7.05 + (z + 24.1) * 0.155) && Math.abs(x) <= 8.85) ||
+            (z >= 15.0 && z <= 21.6 && y >= 9.8 && Math.abs(x) <= 8.7));
+
+        const c = isRoof ? roofCol : bodyCol;
+        colors[i * 3] = c.r;
+        colors[i * 3 + 1] = c.g;
+        colors[i * 3 + 2] = c.b;
+      }
+
+      colAttr.needsUpdate = true;
+      const mat = (Array.isArray(mesh.material) ? mesh.material[0] : mesh.material) as THREE.MeshStandardMaterial;
+      if (mat) {
+        mat.vertexColors = true;
+        mat.color.setRGB(1, 1, 1);
+        mat.needsUpdate = true;
+      }
+    },
+    []
+  );
 
   // Đặt lại góc nhìn
   const handleResetCamera = useCallback(() => {
@@ -53,16 +126,36 @@ export function CarViewer3D({
     }
   }, []);
 
-  // Cập nhật màu sơn xe
+  // Cập nhật màu sơn thân xe và nóc xe
   useEffect(() => {
-    if (!colorHex || carPaintMaterialsRef.current.length === 0) return;
-    const targetColor = new THREE.Color(colorHex);
+    // 1. Nếu là VF8: Áp dụng vertex colors hai tông cho các mesh vỏ xe
+    if (vf8MeshesRef.current.length > 0) {
+      vf8MeshesRef.current.forEach((mesh) => {
+        applyVF8Colors(mesh, colorHex, roofHex);
+      });
+    }
 
-    carPaintMaterialsRef.current.forEach((mat) => {
-      mat.color.copy(targetColor);
-      mat.needsUpdate = true;
-    });
-  }, [colorHex]);
+    // 2. Thân xe thông thường (VF3, VF5, VF6, VF7, VF9)
+    if (carPaintMaterialsRef.current.length > 0 && colorHex) {
+      const targetColor = new THREE.Color(colorHex);
+      carPaintMaterialsRef.current.forEach((mat) => {
+        mat.color.copy(targetColor);
+        mat.needsUpdate = true;
+      });
+    }
+
+    // 3. Nóc xe thông thường
+    if (carRoofMaterialsRef.current.length > 0) {
+      const targetRoof = roofHex || colorHex;
+      if (targetRoof) {
+        const roofColor = new THREE.Color(targetRoof);
+        carRoofMaterialsRef.current.forEach((mat) => {
+          mat.color.copy(roofColor);
+          mat.needsUpdate = true;
+        });
+      }
+    }
+  }, [colorHex, roofHex, applyVF8Colors]);
 
   // Cập nhật chế độ tự động xoay
   useEffect(() => {
@@ -85,6 +178,8 @@ export function CarViewer3D({
     setLoadProgress(0);
     setHasError(false);
     carPaintMaterialsRef.current = [];
+    carRoofMaterialsRef.current = [];
+    vf8MeshesRef.current = [];
 
     // 1. Scene
     const scene = new THREE.Scene();
@@ -93,7 +188,7 @@ export function CarViewer3D({
     // 2. Camera: FOV 28 độ chuẩn góc nhìn phối cảnh studio xe hơi
     const width = container.clientWidth || 800;
     const height = container.clientHeight || 500;
-    const camera = new THREE.PerspectiveCamera(28, width / height, 0.1, 500);
+    const camera = new THREE.PerspectiveCamera(28, width / height, 0.1, 100);
     camera.position.copy(defaultCamPos.current);
     cameraRef.current = camera;
 
@@ -107,35 +202,34 @@ export function CarViewer3D({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(width, height);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.0;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
 
     container.replaceChildren(renderer.domElement);
 
-    // 4. Controls
+    // 4. Controls: Tự động quay theo chiều thuận kim đồng hồ (-1.8)
     const controls = new OrbitControls(camera, renderer.domElement);
     controlsRef.current = controls;
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.autoRotate = autoRotate;
-    controls.autoRotateSpeed = 1.0;
-    // Giới hạn góc nhìn: giữ góc nhìn ngang tầm mắt quanh xe, không chìm dưới sàn hay nhìn từ đỉnh đầu
+    controls.autoRotateSpeed = -1.8; // Dấu âm giúp quay THUẬN chiều kim đồng hồ
     controls.maxPolarAngle = Math.PI / 2 - 0.05;
     controls.minPolarAngle = Math.PI / 2.8; // ~64 độ
     controls.target.copy(defaultTarget.current);
     controls.update();
 
-    // 5. Studio Showroom Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
+    // 5. Studio Showroom Lighting - Cân bằng tự nhiên, độ tương phản sâu, nổi rõ gân xe và không chói lóa
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xe2e8f0, 1.1);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xcfd4dc, 0.5);
     hemiLight.position.set(0, 20, 0);
     scene.add(hemiLight);
 
-    // Key Light rọi chéo trước bên trái
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
+    // Key Light rọi chéo trước bên trái (ánh sáng chính tạo khối xe)
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
     keyLight.position.set(6, 8, 6);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.width = 1024;
@@ -143,13 +237,13 @@ export function CarViewer3D({
     keyLight.shadow.bias = -0.0004;
     scene.add(keyLight);
 
-    // Fill Light làm mềm bóng
-    const fillLight = new THREE.DirectionalLight(0xf1f5f9, 1.4);
+    // Fill Light làm mềm bóng phía sau bên phải
+    const fillLight = new THREE.DirectionalLight(0xf1f5f9, 0.8);
     fillLight.position.set(-6, 6, -5);
     scene.add(fillLight);
 
-    // Top Light phản chiếu nóc xe
-    const topLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    // Top Light phản chiếu dịu trên mui và nóc xe
+    const topLight = new THREE.DirectionalLight(0xffffff, 0.6);
     topLight.position.set(0, 10, 0);
     scene.add(topLight);
 
@@ -204,8 +298,15 @@ export function CarViewer3D({
       // Khoảng cách bao trọn toàn bộ xe vừa vặn, to đẹp và rõ nét (hệ số 1.08)
       const distance = (radius / Math.sin(effectiveFov / 2)) * 1.08;
 
+      const isVF8 = modelName.includes("VF 8") || modelName.includes("VF8");
+
       // Hướng góc chéo trước bên trái (Front 3/4 view kiểu showroom Tesla)
-      const viewDir = new THREE.Vector3(1.15, 0.35, 1.1).normalize();
+      // Đối với VF8: Do model nguyên bản đầu xe quay về Z âm (-24), camera đặt ở (-1.15, 0.35, -1.1)
+      // để nhìn thấy đầu xe chéo ở góc dưới bên trái màn hình đồng bộ với các mẫu xe khác
+      const viewDir = isVF8
+        ? new THREE.Vector3(-1.15, 0.35, -1.1).normalize()
+        : new THREE.Vector3(1.15, 0.35, 1.1).normalize();
+
       const newPos = target.clone().addScaledVector(viewDir, distance);
 
       camera.position.copy(newPos);
@@ -226,6 +327,10 @@ export function CarViewer3D({
         if (isDisposed) return;
         modelScene = gltf.scene;
 
+        const isVF3 = modelName.includes("VF 3") || modelName.includes("VF3");
+        const isVF5 = modelName.includes("VF 5") || modelName.includes("VF5");
+        const isVF8 = modelName.includes("VF 8") || modelName.includes("VF8");
+
         // Tính Bounding Box nguyên bản của model
         const originalBox = new THREE.Box3().setFromObject(gltf.scene);
         const originalSize = originalBox.getSize(new THREE.Vector3());
@@ -244,11 +349,14 @@ export function CarViewer3D({
         gltf.scene.position.y = -originalBox.min.y * scaleFactor;
         gltf.scene.position.z = -originalCenter.z * scaleFactor;
 
-        // Tìm kiếm các vật liệu vỏ xe để đổi màu ngoại thất
+        // Tìm kiếm các vật liệu vỏ xe để đổi màu ngoại thất (thân xe và nóc xe)
         const detectedPaintMaterials: THREE.MeshStandardMaterial[] = [];
+        const detectedRoofMaterials: THREE.MeshStandardMaterial[] = [];
+        const detectedVF8Meshes: THREE.Mesh[] = [];
         const ignoredNames = [
           "glass", "window", "tire", "licplate", "led", "interior",
-          "leather", "seat", "brake", "disk", "mirror", "chrome", "wheel"
+          "leather", "seat", "brake", "disk", "mirror", "chrome", "wheel", "piping",
+          "material__198", "mattemetal", "phanh", "brakedisk", "orangeglass", "lamp", "light"
         ];
 
         gltf.scene.traverse((child) => {
@@ -264,6 +372,87 @@ export function CarViewer3D({
                 const matName = (mat.name || "").toLowerCase();
                 const meshName = (mesh.name || "").toLowerCase();
 
+                // 1. Đèn pha & dải LED cánh chim trước: Trắng tinh khiết phát sáng rực rỡ
+                if (
+                  matName.includes("led_tr") ||
+                  matName.includes("led_tr?ng") ||
+                  meshName.includes("001") ||
+                  meshName.includes("002")
+                ) {
+                  mat.color.setRGB(1, 1, 1);
+                  mat.emissive.setRGB(1, 1, 1);
+                  mat.emissiveIntensity = 1.8;
+                  mat.toneMapped = false;
+                  return;
+                }
+
+                // 2. Đèn hậu LED dải sau (VF8: 'led__1', VF3: 'led_red', VF9: 'redglass'): ĐỎ RỰC RỠ ĐẶC TRƯNG VINFAST
+                if (
+                  matName.includes("led__1") ||
+                  matName.includes("led_red") ||
+                  matName.includes("redglass")
+                ) {
+                  mat.color.setRGB(0.95, 0.05, 0.05);
+                  mat.emissive.setRGB(1.0, 0.05, 0.05);
+                  mat.emissiveIntensity = 2.8;
+                  mat.opacity = 0.98;
+                  mat.transparent = true;
+                  mat.depthWrite = true;
+                  mat.toneMapped = false;
+                  return;
+                }
+
+                // 3. Nội thất ghế da đỏ sẫm:
+                if (matName.includes("material__198")) {
+                  mat.color.setRGB(0.75, 0.08, 0.08);
+                  mat.emissive.setRGB(0.1, 0.0, 0.0);
+                  mat.emissiveIntensity = 0.2;
+                  return;
+                }
+
+                // 4. Cùm phanh thể thao đỏ:
+                if (matName.includes("phanh") || matName.includes("brake")) {
+                  mat.color.setRGB(0.85, 0.05, 0.05);
+                  mat.emissive.setRGB(0.3, 0.0, 0.0);
+                  mat.emissiveIntensity = 0.3;
+                  return;
+                }
+
+                // 5. Đèn LED phụ trợ khác:
+                if (matName.includes("led") || matName.includes("light")) {
+                  mat.color.setRGB(1, 1, 1);
+                  mat.emissive.setRGB(1, 1, 1);
+                  mat.emissiveIntensity = 1.4;
+                  mat.toneMapped = false;
+                  return;
+                }
+
+                // 1. Nhận diện nóc xe VF3 (Mesh 008-0-8 hoặc vật liệu "white")
+                if (isVF3 && (matName === "white" || meshName === "008-0-8")) {
+                  mat.roughness = 0.28;
+                  mat.metalness = 0.16;
+                  const targetRoof = roofHex || colorHex;
+                  if (targetRoof) mat.color.setStyle(targetRoof);
+                  detectedRoofMaterials.push(mat);
+                  return;
+                }
+
+                // 2. Nhận diện nóc xe VF5 (Mesh 030-0-30 hoặc vật liệu "black__1")
+                if (isVF5 && (matName === "black__1" || meshName === "030-0-30")) {
+                  mat.roughness = 0.28;
+                  mat.metalness = 0.16;
+                  const targetRoof = roofHex || colorHex;
+                  if (targetRoof) mat.color.setStyle(targetRoof);
+                  detectedRoofMaterials.push(mat);
+                  return;
+                }
+
+                // 3. Nhận diện vỏ sơn xe VF8 (Mesh 085 đến 100 với vật liệu v?_xe__1)
+                if (isVF8 && matName.includes("xe")) {
+                  detectedVF8Meshes.push(mesh);
+                  return;
+                }
+
                 const isIgnored = ignoredNames.some(
                   (ign) => matName.includes(ign) || meshName.includes(ign)
                 );
@@ -271,17 +460,14 @@ export function CarViewer3D({
                 const isPaint =
                   !isIgnored &&
                   (matName.includes("paint") ||
-                    matName.includes("v?_xe") ||
-                    matName.includes("v__xe") ||
-                    matName.includes("vo_xe") ||
+                    matName.includes("xe") ||
                     matName.includes("body") ||
                     matName.includes("car") ||
-                    matName.includes("white") ||
                     matName.includes("primary"));
 
                 if (isPaint) {
-                  mat.roughness = Math.min(mat.roughness ?? 0.22, 0.3);
-                  mat.metalness = Math.max(mat.metalness ?? 0.35, 0.4);
+                  mat.roughness = 0.32;
+                  mat.metalness = 0.15; // Ánh kim tinh tế, giữ màu sáng rõ, không bị sậm tối
                   if (colorHex) {
                     mat.color.setStyle(colorHex);
                   }
@@ -292,8 +478,16 @@ export function CarViewer3D({
           }
         });
 
-        // Fallback nếu không khớp tên
-        if (detectedPaintMaterials.length === 0 && colorHex) {
+        // Áp dụng màu cho VF8 (hỗ trợ cả một tông và hai tông nắp capo / mui / nóc xe)
+        if (isVF8 && detectedVF8Meshes.length > 0) {
+          vf8MeshesRef.current = detectedVF8Meshes;
+          detectedVF8Meshes.forEach((mesh) => {
+            applyVF8Colors(mesh, colorHex, roofHex);
+          });
+        }
+
+        // Fallback an toàn (chỉ khi hoàn toàn không tìm thấy và tuân thủ nghiêm ngặt ignoredNames)
+        if (!isVF8 && detectedPaintMaterials.length === 0 && colorHex) {
           gltf.scene.traverse((child) => {
             if ((child as THREE.Mesh).isMesh) {
               const mesh = child as THREE.Mesh;
@@ -312,6 +506,8 @@ export function CarViewer3D({
         }
 
         carPaintMaterialsRef.current = detectedPaintMaterials;
+        carRoofMaterialsRef.current = detectedRoofMaterials;
+
         scene.add(gltf.scene);
 
         // TÍNH BÁN KÍNH VÀ CĂN CHỈNH CAMERA BAO TRỌN XE HOÀN HẢO
