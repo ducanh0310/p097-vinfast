@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { VEHICLES, PROVINCES, ACCESSORIES, VehicleKey } from "@/lib/vehicle-data";
 
 export interface Config {
@@ -22,6 +22,23 @@ export function useConfigurator(initial: Partial<Config> = {}) {
     accessories: [],
     ...initial,
   });
+
+  useEffect(() => {
+    if (initial.model && initial.model !== config.model) {
+      const v = VEHICLES[initial.model];
+      if (v) {
+        setConfig((prev) => ({
+          ...prev,
+          model: initial.model!,
+          versionId: initial.versionId ?? v.versions[0].id,
+          colorId: initial.colorId ?? v.colors[0].id,
+          battery: initial.battery ?? prev.battery,
+          provinceId: initial.provinceId ?? prev.provinceId,
+          accessories: initial.accessories ?? prev.accessories,
+        }));
+      }
+    }
+  }, [initial.model, initial.versionId, initial.colorId]);
 
   const setField = <K extends keyof Config>(key: K, val: Config[K]) => {
     setConfig((prev) => {

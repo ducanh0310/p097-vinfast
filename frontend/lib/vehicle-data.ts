@@ -1,6 +1,7 @@
 export const VEHICLES = {
   "VF3": {
     label: "VF 3",
+    model3d: "/cars/models/vinfast-vf3.glb",
     image: "https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/dwb882e2eb/images/vf3/vf3-white.png",
     versions: [
       { id: "vf3_base", label: "Tiêu chuẩn", price: 235000000 },
@@ -14,6 +15,7 @@ export const VEHICLES = {
   },
   "VF5": {
     label: "VF 5",
+    model3d: "/cars/models/vinfast-vf5.glb",
     image: "https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/images/vf5/vf5-white.png",
     versions: [
       { id: "vf5_base", label: "Tiêu chuẩn", price: 414000000 },
@@ -29,6 +31,7 @@ export const VEHICLES = {
   },
   "VF6": {
     label: "VF 6",
+    model3d: "/cars/models/vinfast-vf6.glb",
     image: "https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/images/vf6/vf6-white.png",
     versions: [
       { id: "vf6_base", label: "Tiêu chuẩn", price: 599000000 },
@@ -46,6 +49,7 @@ export const VEHICLES = {
   },
   "VF7": {
     label: "VF 7",
+    model3d: "/cars/models/vinfast-vf7.glb",
     image: "https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/images/vf7/vf7-white.png",
     versions: [
       { id: "vf7_base", label: "Tiêu chuẩn", price: 799000000 },
@@ -61,6 +65,7 @@ export const VEHICLES = {
   },
   "VF8": {
     label: "VF 8",
+    model3d: "/cars/models/vinfast-vf8.glb",
     image: "https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/images/vf8/vf8-white.png",
     versions: [
       { id: "vf8_base", label: "Tiêu chuẩn", price: 999000000 },
@@ -77,6 +82,7 @@ export const VEHICLES = {
   },
   "VF9": {
     label: "VF 9",
+    model3d: "/cars/models/vinfast-vf9.glb",
     image: "https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/images/vf9/vf9-white.png",
     versions: [
       { id: "vf9_base", label: "Tiêu chuẩn", price: 1399000000 },
@@ -88,6 +94,19 @@ export const VEHICLES = {
       { id: "silver", label: "Bạc Ánh Kim",     hex: "#C0C0C0" },
     ],
     battery: { buy: 180000000, rent: 3490000 },
+  },
+  "VFWILD": {
+    label: "VF Wild",
+    model3d: null, // Mẫu concept bán tải chưa có model 3D -> sẽ hiển thị "hiện chưa có bản xem trước"
+    image: "https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/images/vf7/vf7-white.png",
+    versions: [
+      { id: "wild_concept", label: "Bản Concept", price: 850000000 },
+    ],
+    colors: [
+      { id: "silver", label: "Bạc Kim Loại", hex: "#A8A9AD" },
+      { id: "black",  label: "Đen Nhám",     hex: "#1F2022" },
+    ],
+    battery: { buy: 0, rent: 2200000 },
   },
 };
 
