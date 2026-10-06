@@ -202,7 +202,7 @@ export function CarViewer3D({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(width, height);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
+    renderer.toneMappingExposure = 1.25; // Tăng sáng một chút ít, giúp xe sáng rõ, nổi khối bóng bẩy
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
 
@@ -220,16 +220,16 @@ export function CarViewer3D({
     controls.target.copy(defaultTarget.current);
     controls.update();
 
-    // 5. Studio Showroom Lighting - Cân bằng tự nhiên, độ tương phản sâu, nổi rõ gân xe và không chói lóa
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    // 5. Studio Showroom Lighting - Cân bằng tự nhiên, sáng đẹp nổi bật khối xe và gân dập nổi
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
     scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xcfd4dc, 0.5);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xe2e8f0, 1.1);
     hemiLight.position.set(0, 20, 0);
     scene.add(hemiLight);
 
     // Key Light rọi chéo trước bên trái (ánh sáng chính tạo khối xe)
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
     keyLight.position.set(6, 8, 6);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.width = 1024;
@@ -238,14 +238,19 @@ export function CarViewer3D({
     scene.add(keyLight);
 
     // Fill Light làm mềm bóng phía sau bên phải
-    const fillLight = new THREE.DirectionalLight(0xf1f5f9, 0.8);
+    const fillLight = new THREE.DirectionalLight(0xf1f5f9, 1.4);
     fillLight.position.set(-6, 6, -5);
     scene.add(fillLight);
 
     // Top Light phản chiếu dịu trên mui và nóc xe
-    const topLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    const topLight = new THREE.DirectionalLight(0xffffff, 1.1);
     topLight.position.set(0, 10, 0);
     scene.add(topLight);
+
+    // Rim Light rọi nhẹ phía sau đuôi xe giúp dải đèn hậu và thân sau luôn sáng rõ, nổi khối
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    rimLight.position.set(0, 4, -7);
+    scene.add(rimLight);
 
     // 6. Bóng đổ mềm tự nhiên dưới gầm xe (Fade out 100% về 0, không có viền mép)
     const shadowSize = 16;
@@ -355,8 +360,7 @@ export function CarViewer3D({
         const detectedVF8Meshes: THREE.Mesh[] = [];
         const ignoredNames = [
           "glass", "window", "tire", "licplate", "led", "interior",
-          "leather", "seat", "brake", "disk", "mirror", "chrome", "wheel", "piping",
-          "material__198", "mattemetal", "phanh", "brakedisk", "orangeglass", "lamp", "light"
+          "leather", "seat", "brake", "disk", "mirror", "chrome", "wheel", "piping"
         ];
 
         gltf.scene.traverse((child) => {
@@ -372,65 +376,10 @@ export function CarViewer3D({
                 const matName = (mat.name || "").toLowerCase();
                 const meshName = (mesh.name || "").toLowerCase();
 
-                // 1. Đèn pha & dải LED cánh chim trước: Trắng tinh khiết phát sáng rực rỡ
-                if (
-                  matName.includes("led_tr") ||
-                  matName.includes("led_tr?ng") ||
-                  meshName.includes("001") ||
-                  meshName.includes("002")
-                ) {
-                  mat.color.setRGB(1, 1, 1);
-                  mat.emissive.setRGB(1, 1, 1);
-                  mat.emissiveIntensity = 1.8;
-                  mat.toneMapped = false;
-                  return;
-                }
-
-                // 2. Đèn hậu LED dải sau (VF8: 'led__1', VF3: 'led_red', VF9: 'redglass'): ĐỎ RỰC RỠ ĐẶC TRƯNG VINFAST
-                if (
-                  matName.includes("led__1") ||
-                  matName.includes("led_red") ||
-                  matName.includes("redglass")
-                ) {
-                  mat.color.setRGB(0.95, 0.05, 0.05);
-                  mat.emissive.setRGB(1.0, 0.05, 0.05);
-                  mat.emissiveIntensity = 2.8;
-                  mat.opacity = 0.98;
-                  mat.transparent = true;
-                  mat.depthWrite = true;
-                  mat.toneMapped = false;
-                  return;
-                }
-
-                // 3. Nội thất ghế da đỏ sẫm:
-                if (matName.includes("material__198")) {
-                  mat.color.setRGB(0.75, 0.08, 0.08);
-                  mat.emissive.setRGB(0.1, 0.0, 0.0);
-                  mat.emissiveIntensity = 0.2;
-                  return;
-                }
-
-                // 4. Cùm phanh thể thao đỏ:
-                if (matName.includes("phanh") || matName.includes("brake")) {
-                  mat.color.setRGB(0.85, 0.05, 0.05);
-                  mat.emissive.setRGB(0.3, 0.0, 0.0);
-                  mat.emissiveIntensity = 0.3;
-                  return;
-                }
-
-                // 5. Đèn LED phụ trợ khác:
-                if (matName.includes("led") || matName.includes("light")) {
-                  mat.color.setRGB(1, 1, 1);
-                  mat.emissive.setRGB(1, 1, 1);
-                  mat.emissiveIntensity = 1.4;
-                  mat.toneMapped = false;
-                  return;
-                }
-
                 // 1. Nhận diện nóc xe VF3 (Mesh 008-0-8 hoặc vật liệu "white")
                 if (isVF3 && (matName === "white" || meshName === "008-0-8")) {
-                  mat.roughness = 0.28;
-                  mat.metalness = 0.16;
+                  mat.roughness = Math.min(mat.roughness ?? 0.22, 0.28);
+                  mat.metalness = Math.max(mat.metalness ?? 0.35, 0.38);
                   const targetRoof = roofHex || colorHex;
                   if (targetRoof) mat.color.setStyle(targetRoof);
                   detectedRoofMaterials.push(mat);
@@ -439,8 +388,8 @@ export function CarViewer3D({
 
                 // 2. Nhận diện nóc xe VF5 (Mesh 030-0-30 hoặc vật liệu "black__1")
                 if (isVF5 && (matName === "black__1" || meshName === "030-0-30")) {
-                  mat.roughness = 0.28;
-                  mat.metalness = 0.16;
+                  mat.roughness = Math.min(mat.roughness ?? 0.22, 0.28);
+                  mat.metalness = Math.max(mat.metalness ?? 0.35, 0.38);
                   const targetRoof = roofHex || colorHex;
                   if (targetRoof) mat.color.setStyle(targetRoof);
                   detectedRoofMaterials.push(mat);
@@ -453,6 +402,18 @@ export function CarViewer3D({
                   return;
                 }
 
+                // 4. Riêng VF8: Cụm đèn hậu 'led__1' trong file GLB gốc có alpha = 0.018 nên cần set opacity để hiển thị màu đỏ sắc nét
+                if (isVF8 && matName.includes("led__1")) {
+                  mat.transparent = true;
+                  mat.opacity = 0.95;
+                  mat.depthWrite = true;
+                  mat.color.setRGB(0.85, 0.05, 0.05);
+                  mat.emissive.setRGB(0.85, 0.05, 0.05);
+                  mat.emissiveIntensity = 1.0;
+                  mat.toneMapped = true;
+                  return;
+                }
+
                 const isIgnored = ignoredNames.some(
                   (ign) => matName.includes(ign) || meshName.includes(ign)
                 );
@@ -460,14 +421,16 @@ export function CarViewer3D({
                 const isPaint =
                   !isIgnored &&
                   (matName.includes("paint") ||
-                    matName.includes("xe") ||
+                    matName.includes("v?_xe") ||
+                    matName.includes("v__xe") ||
+                    matName.includes("vo_xe") ||
                     matName.includes("body") ||
                     matName.includes("car") ||
                     matName.includes("primary"));
 
                 if (isPaint) {
-                  mat.roughness = 0.32;
-                  mat.metalness = 0.15; // Ánh kim tinh tế, giữ màu sáng rõ, không bị sậm tối
+                  mat.roughness = Math.min(mat.roughness ?? 0.22, 0.28);
+                  mat.metalness = Math.max(mat.metalness ?? 0.35, 0.38);
                   if (colorHex) {
                     mat.color.setStyle(colorHex);
                   }
