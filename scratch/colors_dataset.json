@@ -1,0 +1,242 @@
+{
+  "VF3": [
+    {
+      "color_code": "CE2Q",
+      "label": "Đỏ Năng Lượng (Solar Ruby)",
+      "hex": "#A31F2A",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw17da70f9/images/VF3/TI1CV/CE2Q.png"
+    },
+    {
+      "color_code": "181U",
+      "label": "Vàng nóc Trắng (Summer Yellow - Infinity Blanc Roof)",
+      "hex": "#F5B800",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dwca397be8/images/VF3/TI1CV/181U.png"
+    },
+    {
+      "color_code": "181Y",
+      "label": "Xanh Cổng Trời nóc Trắng (Sky Blue - Infinity Blanc Roof)",
+      "hex": "#4A90D9",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw478de8a5/images/VF3/TI1CV/181Y.png"
+    },
+    {
+      "color_code": "CE1W",
+      "label": "Xanh Bạc Hà (Urban Mint)",
+      "hex": "#7CB3A3",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw9307fd41/images/VF3/TI1CV/CE1W.png"
+    },
+    {
+      "color_code": "CE1V",
+      "label": "Xám Tinh Tế (Zenith Grey)",
+      "hex": "#5F6363",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw0636251d/images/VF3/TI1CV/CE1V.png"
+    },
+    {
+      "color_code": "CE18",
+      "label": "Trắng Tinh Khôi (Infinity Blanc)",
+      "hex": "#FFFFFF",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dwab23d61a/images/VF3/TI1CV/CE18.png"
+    },
+    {
+      "color_code": "1821",
+      "label": "Hồng nóc Trắng (Rose Pink - Infinity Blanc Roof)",
+      "hex": "#E8A2A8",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dwbd851f0c/images/VF3/TI1CV/1821.png"
+    }
+  ],
+  "VF5": [
+    {
+      "color_code": "181Y",
+      "label": "Xanh Cổng Trời nóc Trắng (Sky Blue - Infinity Blanc Roof)",
+      "hex": "#4A90D9",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw699981ee/images/VF5/GA12V/181Y.png"
+    },
+    {
+      "color_code": "CE2Q",
+      "label": "Đỏ Năng Lượng (Solar Ruby)",
+      "hex": "#A31F2A",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dwe1fd1d5e/images/VF5/GA12V/CE2Q.png"
+    },
+    {
+      "color_code": "111U",
+      "label": "Vàng nóc Đen (Summer Yellow - Jet Black Roof)",
+      "hex": "#F5B800",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dwe77f7665/images/VF5/GA12V/111U.png"
+    },
+    {
+      "color_code": "CE1W",
+      "label": "Xanh Bạc Hà (Urban Mint)",
+      "hex": "#7CB3A3",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dwc759397a/images/VF5/GA12V/CE1W.png"
+    },
+    {
+      "color_code": "CE1V",
+      "label": "Xám Tinh Tế (Zenith Grey)",
+      "hex": "#5F6363",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw99cec5c0/images/VF5/GA12V/CE1V.png"
+    },
+    {
+      "color_code": "CE18",
+      "label": "Trắng Tinh Khôi (Infinity Blanc)",
+      "hex": "#FFFFFF",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dwa56f6ef3/images/VF5/GA12V/CE18.png"
+    }
+  ],
+  "VF6": [
+    {
+      "color_code": "CE18",
+      "label": "Trắng Tinh Khôi (Infinity Blanc)",
+      "hex": "#FFFFFF",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw651ed224/images/VF6/JB10V/CE18.png"
+    },
+    {
+      "color_code": "CE11",
+      "label": "Đen Huyền Bí (Jet Black)",
+      "hex": "#1A1A1A",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dwdbb12556/images/VF6/JB10V/CE11.png"
+    },
+    {
+      "color_code": "CE1V",
+      "label": "Xám Tinh Tế (Zenith Grey)",
+      "hex": "#5F6363",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw03f5c7b6/images/VF6/JB10V/CE1V.png"
+    },
+    {
+      "color_code": "CE1W",
+      "label": "Xanh Bạc Hà (Urban Mint)",
+      "hex": "#7CB3A3",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw62556341/images/VF6/JB10V/CE1W.png"
+    },
+    {
+      "color_code": "CE2Q",
+      "label": "Đỏ Năng Lượng (Solar Ruby)",
+      "hex": "#A31F2A",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dwbc1330ec/images/VF6/JB10V/CE2Q.png"
+    }
+  ],
+  "VF7": [
+    {
+      "color_code": "CE11",
+      "label": "Đen Huyền Bí (Jet Black)",
+      "hex": "#1A1A1A",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dwdecfc36c/images/VF7/GC15V/CE11_large.png"
+    },
+    {
+      "color_code": "CE2Q",
+      "label": "Đỏ Năng Lượng (Solar Ruby)",
+      "hex": "#A31F2A",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw8d386581/images/VF7/GC15V/CE2Q.png"
+    },
+    {
+      "color_code": "CE1W",
+      "label": "Xanh Bạc Hà (Urban Mint)",
+      "hex": "#7CB3A3",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dwec30877b/images/VF7/GC15V/CE1W.png"
+    },
+    {
+      "color_code": "CE1V",
+      "label": "Xám Tinh Tế (Zenith Grey)",
+      "hex": "#5F6363",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw3b2775cf/images/VF7/GC15V/CE1V.png"
+    },
+    {
+      "color_code": "CE18",
+      "label": "Trắng Tinh Khôi (Infinity Blanc)",
+      "hex": "#FFFFFF",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw8d49e29b/images/VF7/GC15V/CE18.png"
+    }
+  ],
+  "VF8": [
+    {
+      "color_code": "CE18",
+      "label": "Trắng Tinh Khôi (Infinity Blanc)",
+      "hex": "#FFFFFF",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dwbd253f5d/images/VF8/ND31V/CE18.png"
+    },
+    {
+      "color_code": "CE1M",
+      "label": "Đỏ Thẫm Quý Phái (Crimson Red)",
+      "hex": "#BA0C2F",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw35369456/images/VF8/ND31V/CE1M.png"
+    },
+    {
+      "color_code": "CE11",
+      "label": "Đen Huyền Bí (Jet Black)",
+      "hex": "#1A1A1A",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dwa04ccbd3/images/VF8/ND31V/CE11.png"
+    },
+    {
+      "color_code": "171V",
+      "label": "Xám nóc Bạc (Zenith Grey - Desat Silver Roof)",
+      "hex": "#5F6363",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw99a9af24/images/VF8/ND31V/171V.png"
+    },
+    {
+      "color_code": "CE22",
+      "label": "Xanh Rêu Đậm (Ivy Green)",
+      "hex": "#2E4D38",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw41f5dfca/images/VF8/ND31V/CE22.png"
+    },
+    {
+      "color_code": "1V18",
+      "label": "Trắng nóc Xám (Infinity Blanc - Zenith Grey Roof)",
+      "hex": "#FFFFFF",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw819cf5c9/images/VF8/ND31V/1V18.png"
+    },
+    {
+      "color_code": "2927",
+      "label": "Đỏ Đậm nóc Đồng (Crimson Velvet - Mystery Bronze Roof)",
+      "hex": "#7A1C29",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dwff7eceda/images/VF8/ND31V/2927.png"
+    },
+    {
+      "color_code": "2911",
+      "label": "Đen nóc Đồng (Jet Black - Mystery Bronze Roof)",
+      "hex": "#1A1A1A",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw533a22b2/images/VF8/ND31V/2911.png"
+    }
+  ],
+  "VF9": [
+    {
+      "color_code": "CE18",
+      "label": "Trắng Tinh Khôi (Infinity Blanc)",
+      "hex": "#FFFFFF",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw359f3d29/images/VF9/NE3LV/CE18.png"
+    },
+    {
+      "color_code": "CE1M",
+      "label": "Đỏ Thẫm Quý Phái (Crimson Red)",
+      "hex": "#BA0C2F",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw13165e38/images/VF9/NE3LV/CE1M.png"
+    },
+    {
+      "color_code": "CE1W",
+      "label": "Xanh Bạc Hà (Urban Mint)",
+      "hex": "#7CB3A3",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dwed816812/images/VF9/NE3LV/CE1W.png"
+    },
+    {
+      "color_code": "CE11",
+      "label": "Đen Huyền Bí (Jet Black)",
+      "hex": "#1A1A1A",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dwf7b9f784/images/VF9/NE3LV/CE11.png"
+    },
+    {
+      "color_code": "CE22",
+      "label": "Xanh Rêu Đậm (Ivy Green)",
+      "hex": "#2E4D38",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dwa8631ed5/images/VF9/NE3LV/CE22.png"
+    },
+    {
+      "color_code": "CE1V",
+      "label": "Xám Tinh Tế (Zenith Grey)",
+      "hex": "#5F6363",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw0c7ae75d/images/VF9/NE3LV/CE1V.png"
+    },
+    {
+      "color_code": "CE17",
+      "label": "Bạc Ánh Kim (Desat Silver)",
+      "hex": "#C0C0C0",
+      "image_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-vinfast_vn_master/default/dw08e2a618/images/VF9/NE3LV/CE17.png"
+    }
+  ]
+}

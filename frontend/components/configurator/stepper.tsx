@@ -37,6 +37,8 @@ export function Stepper({ current, query = "" }: { current: 0 | 1 | 2; query?: s
                   ? "px-2 sm:px-3"
                   : "pl-2 sm:pl-3";
 
+              const isStep3 = i === 2;
+
               const body = (
                 <span
                   className={`inline-flex items-center gap-1.5 sm:gap-2.5 whitespace-nowrap bg-white ${paddingClass} ${
@@ -45,8 +47,10 @@ export function Stepper({ current, query = "" }: { current: 0 | 1 | 2; query?: s
                       : done
                       ? "text-slate-700 hover:text-slate-900"
                       : "text-slate-400"
-                  }`}
+                  } ${isStep3 ? "max-sm:flex-row-reverse" : ""}`}
                 >
+
+
                   <span
                     className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-semibold ${
                       isCurrent

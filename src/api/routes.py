@@ -141,7 +141,10 @@ async def list_vehicles(db: AsyncSession = Depends(get_db)):
                 "id": cid,
                 "label": r.color,
                 "hex": r.color_hex,
+                "image_url": r.image_url or "",
+                "imageUrl": r.image_url or "",
             })
+
 
     return {"vehicles": vehicles}
 

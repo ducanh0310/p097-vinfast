@@ -35,8 +35,16 @@ function Quote() {
       <Stepper current={2} query={toQuery(config)} />
       <main className="mx-auto grid max-w-6xl gap-8 px-5 pb-16 pt-4 lg:grid-cols-[1fr_460px]">
         <section className="rounded-3xl bg-slate-50 p-6">
-          <CarImage model={config.model} colorId={config.colorId} alt={v.label} maxWidth={560} className="mx-auto" />
+          <CarImage
+            model={config.model}
+            colorId={config.colorId}
+            imageUrl={(pricing.color as any)?.imageUrl || (pricing.color as any)?.image_url}
+            alt={v.label}
+            maxWidth={560}
+            className="mx-auto"
+          />
           <h1 className="mt-4 text-2xl font-bold text-slate-900">VinFast {v.label} {pricing.version.label}</h1>
+
           <p className="mt-1 text-slate-500">{pricing.color.label} · Pin {config.battery === "rent" ? `thuê (${formatVND(pricing.batteryRent)}/tháng)` : "mua"} · {pricing.province.label}</p>
           <Link href={`/configurator/customize?${toQuery(config)}`} className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-blue-600"><ArrowLeft size={16} />Sửa cấu hình</Link>
         </section>
