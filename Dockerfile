@@ -27,7 +27,6 @@ ENV PYTHONUNBUFFERED=1
 
 # Copy application source and data assets with correct ownership
 COPY --chown=appuser:appuser src/ ./src/
-COPY --chown=appuser:appuser data/ ./data/
 COPY --chown=appuser:appuser dataset/ ./dataset/
 
 RUN mkdir -p /app/data && chown -R appuser:appuser /app

@@ -62,3 +62,17 @@ async def test_chat_returns_agent_answer_and_session(client, monkeypatch):
 async def test_agent_status(client):
     response = await client.get("/api/v1/status")
     assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_list_vehicles(client):
+    response = await client.get("/api/v1/vehicles")
+    assert response.status_code == 200
+    data = response.json()
+    assert "vehicles" in data
+    vehicles = data["vehicles"]
+    for model in ["VF3", "VF5", "VF6", "VF7", "VF8", "VF9"]:
+        assert model in vehicles
+        assert len(vehicles[model]["versions"]) > 0
+        assert len(vehicles[model]["colors"]) > 0
+    assert "VFWILD" not in vehicles

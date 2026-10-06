@@ -14,9 +14,9 @@ import { VEHICLES } from "@/lib/vehicle-data";
 import { formatVND } from "@/lib/format";
 
 function Quote() {
-  const { config, pricing } = useConfigurator(fromQuery(useSearchParams()));
+  const { config, pricing, vehicle } = useConfigurator(fromQuery(useSearchParams()));
   const [open, setOpen] = useState(false);
-  const v = VEHICLES[config.model];
+  const v = vehicle || VEHICLES[config.model];
   const text = `${v.label} ${pricing.version.label} · ${pricing.color.label} · ${pricing.province.label}`;
   const rows: [string, number][] = [
     [`Giá xe ${v.label} ${pricing.version.label}`, pricing.basePrice],

@@ -39,8 +39,8 @@ function Customize() {
     setMounted(true);
   }, []);
 
-  const { config, setField, toggleAccessory, pricing } = configurator;
-  const v = VEHICLES[config.model];
+  const { config, setField, toggleAccessory, pricing, vehicle } = configurator;
+  const v = vehicle || VEHICLES[config.model];
   const query = toQuery(config);
   const opt = (on: boolean) =>
     `rounded-2xl border px-4 py-3 text-left text-sm transition ${

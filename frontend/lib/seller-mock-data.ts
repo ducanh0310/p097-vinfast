@@ -103,7 +103,7 @@ export const INVENTORY: InventoryItem[] = [
   { id:"i2", model:"VF6", version:"Plus",        color:"Đen Huyền Bí",   colorHex:"#1a1a1a", quantity:1, estDelivery:"Giao ngay",  updatedAt:"2026-10-01" },
   { id:"i3", model:"VF6", version:"Tiêu chuẩn", color:"Xanh Cổng Trời", colorHex:"#4A90D9", quantity:2, estDelivery:"3-5 ngày",   updatedAt:"2026-10-01" },
   { id:"i4", model:"VF7", version:"Plus",        color:"Trắng Tinh Khôi", colorHex:"#FFFFFF", quantity:0, estDelivery:"2-3 tuần",   updatedAt:"2026-09-30" },
-  { id:"i5", model:"VF7", version:"Tiêu chuẩn", color:"Bạc Ánh Kim",    colorHex:"#C0C0C0", quantity:2, estDelivery:"Giao ngay",  updatedAt:"2026-10-01" },
+  { id:"i5", model:"VF7", version:"Tiêu chuẩn", color:"Xám Tinh Tế",    colorHex:"#5F6363", quantity:2, estDelivery:"Giao ngay",  updatedAt:"2026-10-01" },
   { id:"i6", model:"VF5", version:"Plus",        color:"Đỏ Rực Rỡ",     colorHex:"#C0392B", quantity:4, estDelivery:"Giao ngay",  updatedAt:"2026-10-02" },
   { id:"i7", model:"VF8", version:"Plus",        color:"Đen Huyền Bí",   colorHex:"#1a1a1a", quantity:1, estDelivery:"1 tuần",     updatedAt:"2026-09-28" },
 ];
