@@ -8,9 +8,9 @@ ON CONFLICT DO NOTHING;
 
 -- Users (password placeholder — thay bằng bcrypt hash thật khi có auth)
 INSERT INTO users (id, email, name, hashed_pw, role, dealer_id) VALUES
-  ('u1000000-0000-0000-0000-000000000001','seller@abc.vn',    'Nguyễn Văn An', 'hashed_123456',   'seller',    'd1000000-0000-0000-0000-000000000001'),
-  ('u1000000-0000-0000-0000-000000000002','warehouse@abc.vn', 'Lê Văn Cường',  'hashed_123456',   'warehouse', 'd1000000-0000-0000-0000-000000000001'),
-  ('u1000000-0000-0000-0000-000000000003','admin@vinfast.vn', 'Admin VinFast', 'hashed_admin123', 'admin',     NULL)
+  ('b1000000-0000-0000-0000-000000000001','seller@abc.vn',    'Nguyễn Văn An', 'hashed_123456',   'seller',    'd1000000-0000-0000-0000-000000000001'),
+  ('b1000000-0000-0000-0000-000000000002','warehouse@abc.vn', 'Lê Văn Cường',  'hashed_123456',   'warehouse', 'd1000000-0000-0000-0000-000000000001'),
+  ('b1000000-0000-0000-0000-000000000003','admin@vinfast.vn', 'Admin VinFast', 'hashed_admin123', 'admin',     NULL)
 ON CONFLICT DO NOTHING;
 
 -- Vehicle prices
