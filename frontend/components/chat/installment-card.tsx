@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { InstallmentData } from "@/types/chat";
 import { formatVND } from "@/lib/format";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, CreditCard, Info } from "lucide-react";
 
 export function InstallmentCard({ data }: { data: InstallmentData }) {
   const [open, setOpen] = useState(false);
@@ -12,7 +12,10 @@ export function InstallmentCard({ data }: { data: InstallmentData }) {
     <div className="w-80 bg-white rounded-2xl border shadow-md overflow-hidden text-sm">
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-3">
-        <p className="font-bold">💳 Kế hoạch trả góp</p>
+        <p className="font-bold flex items-center gap-1.5">
+          <CreditCard size={15} />
+          <span>Kế hoạch trả góp</span>
+        </p>
         <p className="text-purple-200 text-xs mt-0.5">
           {data.bank} · {data.term_months} tháng · {(data.interest_rate * 100).toFixed(1)}%/năm
         </p>
@@ -71,7 +74,10 @@ export function InstallmentCard({ data }: { data: InstallmentData }) {
               ))}
             </tbody>
           </table>
-          <p className="text-xs text-gray-400 mt-2">⚠️ {data.disclaimer}</p>
+          <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
+            <Info size={12} className="shrink-0" />
+            <span>{data.disclaimer}</span>
+          </p>
         </div>
       )}
     </div>

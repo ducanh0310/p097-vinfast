@@ -11,6 +11,7 @@ import {
 import {
   Users, TrendingUp,
   Clock, CheckCircle,
+  FilePlus, CheckCircle2, MessageSquare, ClipboardList, XCircle
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -108,14 +109,14 @@ export default function DashboardPage() {
         <h2 className="font-semibold text-slate-900 mb-4">Hoạt động gần đây</h2>
         <div className="space-y-3">
           {[
-            { icon:"🆕", text:"Nguyễn Văn An yêu cầu báo giá VF6 Plus",        time:"9 phút trước",  color:"text-blue-600" },
-            { icon:"✅", text:"Phạm Thị Dung đã đặt cọc - VF6 Plus Xanh",       time:"2 giờ trước",   color:"text-green-600" },
-            { icon:"💬", text:"Vũ Thị Hoa hỏi về màu xanh VF7",                  time:"3 giờ trước",   color:"text-slate-600" },
-            { icon:"📋", text:"Đặng Văn Hùng yêu cầu báo giá VF6 Tiêu chuẩn",  time:"Hôm qua 14:00", color:"text-blue-600" },
-            { icon:"❌", text:"Hoàng Minh Đức từ chối báo giá VF8",             time:"Hôm qua 16:00", color:"text-red-500"  },
+            { icon: <FilePlus size={16} className="text-blue-600" />, text:"Nguyễn Văn An yêu cầu báo giá VF6 Plus",        time:"9 phút trước",  color:"text-blue-600" },
+            { icon: <CheckCircle2 size={16} className="text-green-600" />, text:"Phạm Thị Dung đã đặt cọc - VF6 Plus Xanh",       time:"2 giờ trước",   color:"text-green-600" },
+            { icon: <MessageSquare size={16} className="text-slate-600" />, text:"Vũ Thị Hoa hỏi về màu xanh VF7",                  time:"3 giờ trước",   color:"text-slate-600" },
+            { icon: <ClipboardList size={16} className="text-blue-600" />, text:"Đặng Văn Hùng yêu cầu báo giá VF6 Tiêu chuẩn",  time:"Hôm qua 14:00", color:"text-blue-600" },
+            { icon: <XCircle size={16} className="text-red-500" />, text:"Hoàng Minh Đức từ chối báo giá VF8",             time:"Hôm qua 16:00", color:"text-red-500"  },
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-3 py-2 border-b last:border-0">
-              <span className="text-xl">{item.icon}</span>
+              <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-slate-50">{item.icon}</span>
               <span className={`flex-1 text-sm ${item.color}`}>{item.text}</span>
               <span className="text-xs text-slate-400 flex-shrink-0">{item.time}</span>
             </div>

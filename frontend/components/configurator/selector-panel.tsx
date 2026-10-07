@@ -3,7 +3,7 @@
 import { VEHICLES, PROVINCES, ACCESSORIES, VehicleKey } from "@/lib/vehicle-data";
 import { formatVND } from "@/lib/format";
 import { useConfigurator } from "@/hooks/use-configurator";
-import { MessageCircle, FileText } from "lucide-react";
+import { MessageCircle, FileText, Check } from "lucide-react";
 
 interface Props {
   configurator:    ReturnType<typeof useConfigurator>;
@@ -79,7 +79,7 @@ export function SelectorPanel({ configurator, onAskAI, onRequestQuote }: Props) 
                 <span className={`text-sm ${config.colorId === c.id ? "font-semibold text-blue-700" : "text-gray-700"}`}>
                   {c.label}
                 </span>
-                {config.colorId === c.id && <span className="ml-auto text-blue-600 text-xs">✓</span>}
+                {config.colorId === c.id && <Check size={14} className="ml-auto text-blue-600 shrink-0" strokeWidth={2.5} />}
               </button>
             ))}
           </div>
@@ -140,7 +140,7 @@ export function SelectorPanel({ configurator, onAskAI, onRequestQuote }: Props) 
                 >
                   <div className="flex items-center gap-2">
                     <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${checked ? "bg-blue-600 border-blue-600" : "border-gray-300"}`}>
-                      {checked && <span className="text-white text-xs">✓</span>}
+                      {checked && <Check size={11} className="text-white" strokeWidth={3} />}
                     </div>
                     <span className={`text-sm ${checked ? "text-blue-700 font-medium" : "text-gray-700"}`}>
                       {acc.label}

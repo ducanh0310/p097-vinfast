@@ -63,6 +63,97 @@ async def chat(request: ChatRequest) -> ChatResponse:
 
 
 # ════════════════════════════════════════════════════════════
+# VEHICLES CATALOG (Sync with DB)
+# ════════════════════════════════════════════════════════════
+@router.get("/vehicles")
+async def list_vehicles(db: AsyncSession = Depends(get_db)):
+    """Lấy danh mục các dòng xe, phiên bản, màu sắc và giá từ database."""
+    stmt = (
+        select(VehiclePrice)
+        .where(VehiclePrice.effective_to.is_(None))
+        .order_by(VehiclePrice.model, VehiclePrice.version, VehiclePrice.price)
+    )
+    res = await db.execute(stmt)
+    rows = res.scalars().all()
+
+    bat_res = await db.execute(select(BatteryPrice))
+    bat_rows = bat_res.scalars().all()
+    battery_map = {b.model: {"buy": b.buy_price, "rent": b.rent_price} for b in bat_rows}
+
+    known_metadata = {
+        "VF3": {"label": "VF 3", "model3d": "/cars/models/vinfast-vf3.glb", "image": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/dwb882e2eb/images/vf3/vf3-white.png"},
+        "VF5": {"label": "VF 5", "model3d": "/cars/models/vinfast-vf5.glb", "image": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/images/vf5/vf5-white.png"},
+        "VF6": {"label": "VF 6", "model3d": "/cars/models/vinfast-vf6.glb", "image": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/images/vf6/vf6-white.png"},
+        "VF7": {"label": "VF 7", "model3d": "/cars/models/vinfast-vf7.glb", "image": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/images/vf7/vf7-white.png"},
+        "VF8": {"label": "VF 8", "model3d": "/cars/models/vinfast-vf8.glb", "image": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/images/vf8/vf8-white.png"},
+        "VF9": {"label": "VF 9", "model3d": "/cars/models/vinfast-vf9.glb", "image": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/images/vf9/vf9-white.png"},
+    }
+
+    color_slugs = {
+        "Trắng Tinh Khôi": "white",
+        "Đen Huyền Bí": "black",
+        "Đỏ Năng Lượng": "red",
+        "Xanh Bạc Hà": "mint",
+        "Xanh Lá Nhạt": "mint",
+        "Xám Tinh Tế": "grey",
+        "Bạc Ánh Kim": "silver",
+        "Xanh Cổng Trời": "blue",
+        "Xanh Cổng Trời nóc Trắng": "blue_white",
+        "Vàng nóc Trắng": "yellow_white",
+        "Vàng nóc Đen": "yellow_black",
+        "Hồng nóc Trắng": "pink_white",
+        "Đỏ Thẫm Quý Phái": "crimson",
+        "Xanh Rêu Đậm": "green",
+        "Xám nóc Bạc": "grey_silver",
+        "Trắng nóc Xám": "white_grey",
+        "Đỏ Đậm nóc Đồng": "ruby_bronze",
+        "Đen nóc Đồng": "black_bronze",
+        "Xanh Rêu": "green",
+        "Đỏ Rực Rỡ": "red",
+    }
+
+    vehicles: dict[str, dict] = {}
+    for r in rows:
+        m = r.model
+        if m not in vehicles:
+            meta = known_metadata.get(m, {"label": m, "model3d": None, "image": ""})
+            vehicles[m] = {
+                "label": meta["label"],
+                "model3d": meta["model3d"],
+                "image": meta["image"],
+                "versions": [],
+                "colors": [],
+                "battery": battery_map.get(m, {"buy": 0, "rent": 0}),
+            }
+
+        # Deduplicate versions
+        ver_id = f"{m.lower()}_{'base' if r.version == 'Tiêu chuẩn' else 'plus'}"
+        if not any(v["label"] == r.version for v in vehicles[m]["versions"]):
+            vehicles[m]["versions"].append({
+                "id": ver_id,
+                "label": r.version,
+                "price": r.price,
+            })
+
+        # Deduplicate colors
+        if not any(c["label"] == r.color for c in vehicles[m]["colors"]):
+            cid = color_slugs.get(r.color, f"col_{len(vehicles[m]['colors'])}")
+            vehicles[m]["colors"].append({
+                "id": cid,
+                "label": r.color,
+                "hex": r.color_hex,
+                "roof_hex": getattr(r, "roof_hex", None) or r.color_hex,
+                "roofHex": getattr(r, "roof_hex", None) or r.color_hex,
+                "image_url": r.image_url or "",
+                "imageUrl": r.image_url or "",
+            })
+
+
+
+    return {"vehicles": vehicles}
+
+
+# ════════════════════════════════════════════════════════════
 # STATUS
 # ════════════════════════════════════════════════════════════
 @router.get("/status")

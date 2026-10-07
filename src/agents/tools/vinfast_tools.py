@@ -31,7 +31,11 @@ def _normalize(text: str | None) -> str:
 def _read_csv(name: str) -> list[dict[str, str]]:
     path = RELATIONAL_DIR / name
     if not path.is_file():
-        raise RuntimeError(f"Thiếu dữ liệu catalog: {path}")
+        alt_path = Path(__file__).resolve().parents[3] / "data" / "vinfast_agent" / "relational" / name
+        if alt_path.is_file():
+            path = alt_path
+        else:
+            raise RuntimeError(f"Thiếu dữ liệu catalog: {path}")
     with path.open(encoding="utf-8-sig", newline="") as source:
         return list(csv.DictReader(source))
 
@@ -198,20 +202,20 @@ def lookup_car_color_options(vehicle_queries: list[str]) -> str:
         term = _normalize(query)
         matches = [
             row for row in rows
-            if term and term in _normalize(f"{row['model_name']} {row['edition_name']}")
+            if term and term in _normalize(f"{row.get('model_name') or row.get('model_id', '')} {row.get('edition_name') or row.get('edition_id', '')}")
         ]
         if not matches:
             unmatched.append(query)
             continue
         for row in matches:
             option = {
-                "model": row["model_name"],
-                "edition": row["edition_name"],
-                "color": row["color_name"],
-                "color_code": row["color_code"],
-                "color_type": row["color_type"],
-                "extra_price_vnd": int(row["color_extra_price_vnd"] or 0),
-                "total_car_price_vnd": int(row["total_car_price_vnd"] or 0),
+                "model": row.get("model_name") or row.get("model_id", ""),
+                "edition": row.get("edition_name") or row.get("edition_id", ""),
+                "color": row.get("color_name", ""),
+                "color_code": row.get("color_code", ""),
+                "color_type": row.get("color_type", ""),
+                "extra_price_vnd": int(row.get("color_extra_price_vnd") or 0),
+                "total_car_price_vnd": int(row.get("total_car_price_vnd") or 0),
                 "image_url": row.get("image_url", ""),
             }
             if option not in matched_options:

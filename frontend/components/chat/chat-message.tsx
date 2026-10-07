@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { PriceCard } from "./price-card";
 import { InstallmentCard } from "./installment-card";
 import { InventoryCard } from "./inventory-card";
+import { User, Bot } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 export function ChatMessage({ message }: { message: Message }) {
@@ -16,10 +17,10 @@ export function ChatMessage({ message }: { message: Message }) {
       <div
         className={cn(
           "w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 mb-1",
-          isUser ? "bg-blue-600 text-white" : "bg-blue-100"
+          isUser ? "bg-blue-600 text-white" : "bg-blue-100 text-blue-600"
         )}
       >
-        {isUser ? "👤" : "🤖"}
+        {isUser ? <User size={15} /> : <Bot size={15} />}
       </div>
 
       {/* Content */}

@@ -39,8 +39,10 @@ CREATE TABLE IF NOT EXISTS vehicle_prices (
     price_version  VARCHAR(50)  NOT NULL,
     effective_from TIMESTAMP    NOT NULL,
     effective_to   TIMESTAMP,
+    image_url      VARCHAR(500),
     created_at     TIMESTAMP DEFAULT NOW()
 );
+
 
 CREATE TABLE IF NOT EXISTS battery_prices (
     id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PROMOTIONS, Promotion } from "@/lib/seller-mock-data";
 import { formatVND } from "@/lib/format";
-import { Plus, Pencil, Trash2, X, ToggleLeft, ToggleRight } from "lucide-react";
+import { Plus, Pencil, Trash2, X, ToggleLeft, ToggleRight, Sparkles } from "lucide-react";
 
 export default function PromotionsPage() {
   const [promos, setPromos]   = useState<Promotion[]>(PROMOTIONS);
@@ -255,8 +255,9 @@ function PromotionForm({
           </label>
 
           {/* Note: auto sync to WeKnora */}
-          <div className="bg-blue-50 rounded-xl p-3 text-xs text-blue-700">
-            💡 Sau khi lưu, khuyến mãi sẽ tự động được đồng bộ lên hệ thống AI — Agent sẽ tư vấn chương trình này cho khách hàng ngay lập tức.
+          <div className="bg-blue-50 rounded-xl p-3 text-xs text-blue-700 flex items-start gap-2">
+            <Sparkles size={14} className="shrink-0 mt-0.5 text-blue-600" />
+            <span>Sau khi lưu, khuyến mãi sẽ tự động được đồng bộ lên hệ thống AI — Agent sẽ tư vấn chương trình này cho khách hàng ngay lập tức.</span>
           </div>
 
           <div className="flex gap-3 pt-2">

@@ -1,14 +1,17 @@
 "use client";
 
 import { InventoryData } from "@/types/chat";
-import { MapPin, Package } from "lucide-react";
+import { MapPin, Package, Calendar } from "lucide-react";
 
 export function InventoryCard({ data }: { data: InventoryData }) {
   return (
     <div className="w-80 bg-white rounded-2xl border shadow-md overflow-hidden text-sm">
       {/* Header */}
       <div className="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-3">
-        <p className="font-bold">📦 Tình trạng kho xe</p>
+        <p className="font-bold flex items-center gap-1.5">
+          <Package size={15} />
+          <span>Tình trạng kho xe</span>
+        </p>
         <p className="text-green-200 text-xs mt-0.5">{data.model}</p>
       </div>
 
@@ -48,8 +51,9 @@ export function InventoryCard({ data }: { data: InventoryData }) {
 
       {/* Footer */}
       <div className="px-4 py-3 border-t bg-gray-50">
-        <button className="w-full py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium transition-colors">
-          🏎️ Đặt lịch lái thử
+        <button className="w-full py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium transition-colors flex items-center justify-center gap-1.5">
+          <Calendar size={13} />
+          <span>Đặt lịch lái thử</span>
         </button>
       </div>
     </div>

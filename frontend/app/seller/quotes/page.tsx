@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { QUOTES, QuoteItem } from "@/lib/seller-mock-data";
 import { formatVND } from "@/lib/format";
-import { CheckCircle, XCircle, FileText, Clock, Eye } from "lucide-react";
+import { CheckCircle, XCircle, FileText, Clock, Eye, Check } from "lucide-react";
 
 const STATUS_CONFIG = {
   pending:  { label: "Chờ duyệt", color: "bg-yellow-100 text-yellow-700", icon: <Clock size={13} /> },
@@ -99,7 +99,7 @@ export default function QuotesPage() {
                     {q.model} {q.version} · {q.province}
                   </p>
                   <p className="text-xs text-slate-400 mt-1">
-                    📱 {q.leadPhone} · Bảng giá {q.priceVersion}
+                    {q.leadPhone} · Bảng giá {q.priceVersion}
                   </p>
                 </div>
                 <div className="text-right">
@@ -110,14 +110,14 @@ export default function QuotesPage() {
 
               {/* Config summary */}
               <div className="mt-3 flex flex-wrap gap-1.5">
-                <Tag label={`🎨 ${q.config.color}`} />
-                <Tag label={`🔋 ${q.config.battery}`} />
+                <Tag label={q.config.color} />
+                <Tag label={q.config.battery} />
                 {q.config.accessories.map((a) => <Tag key={a} label={a} />)}
-                {q.config.promos.map((p) => <Tag key={p} label={`🎁 ${p}`} green />)}
+                {q.config.promos.map((p) => <Tag key={p} label={p} green />)}
               </div>
 
               {q.sellerNote && (
-                <p className="mt-2 text-xs text-slate-500 italic">📝 {q.sellerNote}</p>
+                <p className="mt-2 text-xs text-slate-500 italic">Ghi chú: {q.sellerNote}</p>
               )}
             </button>
           ))}
@@ -146,7 +146,7 @@ export default function QuotesPage() {
                 <div className="flex justify-between"><span>Màu sắc</span><span className="font-medium">{selected.config.color}</span></div>
                 <div className="flex justify-between"><span>Pin</span><span className="font-medium">{selected.config.battery}</span></div>
                 {selected.config.accessories.map((a) => (
-                  <div key={a} className="flex justify-between"><span>{a}</span><span className="text-slate-400">✓</span></div>
+                  <div key={a} className="flex justify-between items-center"><span>{a}</span><Check size={13} className="text-slate-400" /></div>
                 ))}
               </div>
             </div>
@@ -156,7 +156,7 @@ export default function QuotesPage() {
               <div className="space-y-1.5">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Ưu đãi áp dụng</p>
                 {selected.config.promos.map((p) => (
-                  <div key={p} className="bg-green-50 text-green-700 text-xs px-3 py-2 rounded-lg">🎁 {p}</div>
+                  <div key={p} className="bg-green-50 text-green-700 text-xs px-3 py-2 rounded-lg">{p}</div>
                 ))}
               </div>
             )}
@@ -185,10 +185,10 @@ export default function QuotesPage() {
             {selected.status !== "pending" && (
               <div className={`rounded-xl p-3 text-xs ${selected.status === "approved" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
                 <p className="font-semibold mb-1">
-                  {selected.status === "approved" ? "✅ Đã duyệt" : "❌ Đã từ chối"}
+                  {selected.status === "approved" ? "Đã duyệt" : "Đã từ chối"}
                 </p>
                 <p>{selected.reviewedAt}</p>
-                {selected.sellerNote && <p className="mt-1">📝 {selected.sellerNote}</p>}
+                {selected.sellerNote && <p className="mt-1">Ghi chú: {selected.sellerNote}</p>}
               </div>
             )}
           </div>

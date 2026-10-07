@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PriceQuoteData } from "@/types/chat";
 import { formatVND } from "@/lib/format";
-import { ChevronDown, ChevronUp, FileText, CheckCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, FileText, CheckCircle, Gift, Info } from "lucide-react";
 
 export function PriceCard({ data }: { data: PriceQuoteData }) {
   const [open, setOpen] = useState(false);
@@ -30,8 +30,9 @@ export function PriceCard({ data }: { data: PriceQuoteData }) {
           {formatVND(data.final_price)}
         </p>
         {data.total_discount > 0 && (
-          <p className="text-xs text-green-600 font-medium mt-1">
-            🎁 Tiết kiệm {formatVND(data.total_discount)}
+          <p className="text-xs text-green-600 font-medium mt-1 flex items-center gap-1">
+            <Gift size={12} className="shrink-0" />
+            <span>Tiết kiệm {formatVND(data.total_discount)}</span>
           </p>
         )}
       </div>
@@ -88,8 +89,9 @@ export function PriceCard({ data }: { data: PriceQuoteData }) {
           )}
 
           {/* Disclaimer */}
-          <p className="text-xs text-gray-400 bg-gray-50 rounded-lg p-2 leading-relaxed">
-            ⚠️ {data.disclaimer}
+          <p className="text-xs text-gray-400 bg-gray-50 rounded-lg p-2 leading-relaxed flex items-start gap-1">
+            <Info size={12} className="shrink-0 mt-0.5 text-gray-400" />
+            <span>{data.disclaimer}</span>
           </p>
         </div>
       )}

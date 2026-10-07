@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, User, Phone, MapPin, FileText, Loader2 } from "lucide-react";
+import { X, User, Phone, MapPin, FileText, Loader2, CheckCircle2, Lock } from "lucide-react";
 
 export interface BuyerInfo {
   name:    string;
@@ -54,7 +54,10 @@ export function BuyerIdentityModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b bg-blue-600 text-white">
           <div>
-            <h2 className="font-bold">📄 Yêu cầu báo giá chính thức</h2>
+            <h2 className="font-bold flex items-center gap-2">
+              <FileText size={18} />
+              <span>Yêu cầu báo giá chính thức</span>
+            </h2>
             <p className="text-blue-200 text-xs mt-0.5">
               Tư vấn viên sẽ liên hệ xác nhận giá
             </p>
@@ -68,7 +71,7 @@ export function BuyerIdentityModal({
           /* Success state */
           <div className="px-6 py-12 text-center">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">✅</span>
+              <CheckCircle2 size={34} className="text-green-600" />
             </div>
             <h3 className="font-bold text-gray-900 text-lg">Đã gửi thành công!</h3>
             <p className="text-gray-500 text-sm mt-2">
@@ -170,8 +173,9 @@ export function BuyerIdentityModal({
             </div>
 
             {/* Disclaimer */}
-            <p className="text-xs text-gray-400">
-              🔒 Thông tin chỉ dùng để tư vấn viên liên hệ. Không chia sẻ bên thứ 3.
+            <p className="text-xs text-gray-400 flex items-center gap-1">
+              <Lock size={12} className="shrink-0 text-gray-400" />
+              <span>Thông tin chỉ dùng để tư vấn viên liên hệ. Không chia sẻ bên thứ 3.</span>
             </p>
 
             {/* Buttons */}

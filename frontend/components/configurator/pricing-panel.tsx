@@ -3,7 +3,7 @@
 import { VEHICLES } from "@/lib/vehicle-data";
 import { formatVND } from "@/lib/format";
 import { useConfigurator } from "@/hooks/use-configurator";
-import { Info } from "lucide-react";
+import { Info, Car, Gift, FileDown, CheckCircle2 } from "lucide-react";
 
 interface Props {
   configurator: ReturnType<typeof useConfigurator>;
@@ -24,10 +24,10 @@ export function PricingPanel({ configurator, onRequestQuote }: Props) {
             {/* Placeholder hình xe */}
             <div className="w-48 h-28 mx-auto mb-4 flex items-center justify-center">
               <div
-                className="w-full h-full rounded-xl flex items-center justify-center text-4xl shadow-inner"
+                className="w-full h-full rounded-xl flex items-center justify-center shadow-inner"
                 style={{ backgroundColor: pricing.color.hex, border: "1px solid rgba(0,0,0,0.1)" }}
               >
-                🚗
+                <Car size={36} className="text-white drop-shadow-md" />
               </div>
             </div>
             <h2 className="text-xl font-bold text-gray-900">
@@ -116,9 +116,10 @@ export function PricingPanel({ configurator, onRequestQuote }: Props) {
           {/* Khuyến mãi */}
           {pricing.promos.length > 0 && (
             <>
-              <div className="px-6 py-3 bg-green-50">
+              <div className="px-6 py-3 bg-green-50 flex items-center gap-1.5">
+                <Gift size={14} className="text-green-700" />
                 <p className="text-xs font-semibold text-green-700 uppercase tracking-wider">
-                  Ưu đãi đang áp dụng 🎁
+                  Ưu đãi đang áp dụng
                 </p>
               </div>
               {pricing.promos.map((p) => (
@@ -146,8 +147,9 @@ export function PricingPanel({ configurator, onRequestQuote }: Props) {
             <p className="text-3xl font-bold">{formatVND(pricing.finalPrice)}</p>
           </div>
           {pricing.discount > 0 && (
-            <p className="text-blue-200 text-xs mt-2 text-right">
-              🎁 Tiết kiệm {formatVND(pricing.discount)} so với giá niêm yết
+            <p className="text-blue-200 text-xs mt-2 text-right flex items-center justify-end gap-1">
+              <Gift size={12} className="shrink-0" />
+              <span>Tiết kiệm {formatVND(pricing.discount)} so với giá niêm yết</span>
             </p>
           )}
         </div>
@@ -164,11 +166,13 @@ export function PricingPanel({ configurator, onRequestQuote }: Props) {
 
       {/* Buttons */}
       <div className="flex gap-3 mt-4">
-        <button className="flex-1 py-3 rounded-xl border border-blue-600 text-blue-600 font-medium text-sm hover:bg-blue-50 transition-colors">
-          📄 Xuất PDF báo giá
+        <button className="flex-1 py-3 rounded-xl border border-blue-600 text-blue-600 font-medium text-sm hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+          <FileDown size={15} />
+          <span>Xuất PDF báo giá</span>
         </button>
-        <button onClick={onRequestQuote} className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors">
-          ✅ Yêu cầu báo giá chính thức
+        <button onClick={onRequestQuote} className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors flex items-center justify-center gap-2">
+          <CheckCircle2 size={15} />
+          <span>Yêu cầu báo giá chính thức</span>
         </button>
       </div>
     </div>

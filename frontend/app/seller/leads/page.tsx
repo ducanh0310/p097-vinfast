@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { LEADS, Lead } from "@/lib/seller-mock-data";
 import { formatVND } from "@/lib/format";
-import { MessageCircle, Phone, Search } from "lucide-react";
+import { MessageCircle, Phone, Search, MapPin, Car, DollarSign, Clock } from "lucide-react";
 
 const STATUS_CONFIG = {
   new:          { label: "Mới",          color: "bg-blue-100 text-blue-700"   },
   contacted:    { label: "Đã liên hệ",   color: "bg-yellow-100 text-yellow-700"},
   quoted:       { label: "Đã báo giá",   color: "bg-purple-100 text-purple-700"},
-  closed_won:   { label: "Đã chốt ✓",   color: "bg-green-100 text-green-700"  },
+  closed_won:   { label: "Đã chốt",      color: "bg-green-100 text-green-700"  },
   closed_lost:  { label: "Không chốt",   color: "bg-red-100 text-red-600"     },
 };
 
@@ -95,8 +95,9 @@ export default function LeadsPage() {
                     </span>
                   </div>
                   <p className="text-sm text-blue-600 font-medium">{lead.interestedIn}</p>
-                  <p className="text-xs text-slate-400 mt-1 truncate">
-                    💬 &quot;{lead.lastMessage}&quot;
+                  <p className="text-xs text-slate-400 mt-1 truncate flex items-center gap-1">
+                    <MessageCircle size={12} className="shrink-0" />
+                    <span>&quot;{lead.lastMessage}&quot;</span>
                   </p>
                 </div>
                 <div className="text-right flex-shrink-0">
@@ -122,12 +123,12 @@ export default function LeadsPage() {
               </span>
             </div>
             <div className="space-y-2 text-sm text-slate-600">
-              <p>📱 {selected.phone}</p>
-              <p>📍 {selected.province}</p>
-              <p>🚗 Quan tâm: <strong>{selected.interestedIn}</strong></p>
-              <p>💰 Ngân sách: <strong className="text-blue-600">{formatVND(selected.budget)}</strong></p>
-              <p>💬 {selected.messageCount} tin nhắn</p>
-              <p>🕐 {selected.createdAt}</p>
+              <p className="flex items-center gap-2"><Phone size={14} className="text-slate-400" /> {selected.phone}</p>
+              <p className="flex items-center gap-2"><MapPin size={14} className="text-slate-400" /> {selected.province}</p>
+              <p className="flex items-center gap-2"><Car size={14} className="text-slate-400" /> Quan tâm: <strong>{selected.interestedIn}</strong></p>
+              <p className="flex items-center gap-2"><DollarSign size={14} className="text-slate-400" /> Ngân sách: <strong className="text-blue-600">{formatVND(selected.budget)}</strong></p>
+              <p className="flex items-center gap-2"><MessageCircle size={14} className="text-slate-400" /> {selected.messageCount} tin nhắn</p>
+              <p className="flex items-center gap-2"><Clock size={14} className="text-slate-400" /> {selected.createdAt}</p>
             </div>
           </div>
 
