@@ -7,11 +7,11 @@ import unicodedata
 from datetime import date
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from langchain_core.tools import tool
 
 from src.agents.tools.rag import search_gold_knowledge
-from src.agents.tools.web_lookup import lookup_official_web
 
 GOLD_DIR = Path(__file__).resolve().parents[3] / "dataset" / "gold"
 RELATIONAL_DIR = GOLD_DIR / "rdb_schema"
@@ -50,6 +50,38 @@ def _format_vnd(amount: int | float) -> str:
     return f"{formatted} {unit} đồng"
 
 
+VinclubTier = Literal["platinum", "gold", "diamond", "member"]
+CustomerGroup = Literal["public_security_military", "green_switch"]
+VehicleField = Literal["overview", "price", "colors", "performance", "battery_charging", "dimensions", "other_specs"]
+SPEC_FIELDS = {"performance", "battery_charging", "dimensions", "other_specs"}
+PROVINCE_ALIASES = {
+    "saigon": "hochiminh", "sg": "hochiminh", "hue": "thuathienhue",
+    "vungtau": "bariavungtau", "baria": "bariavungtau", "brvt": "bariavungtau",
+}
+
+
+def _province_key(name: str | None) -> str:
+    key = _normalize(name)
+    return PROVINCE_ALIASES.get(key, key)
+
+
+@lru_cache(maxsize=1)
+def _provinces() -> list[dict[str, str]]:
+    return _read_csv("provinces.csv")
+
+
+def _match_province(name: str | None) -> tuple[dict | None, list[str]]:
+    """Khớp tỉnh/thành (có alias). Không khớp thì trả danh sách gợi ý gần đúng."""
+    key = _province_key(name)
+    rows = _provinces()
+    exact = next((row for row in rows if _normalize(row["province_name"]) == key), None)
+    if exact or not key:
+        return exact, []
+    candidates = [row["province_name"] for row in rows
+                  if key in _normalize(row["province_name"]) or _normalize(row["province_name"]) in key]
+    return None, candidates[:5] or [row["province_name"] for row in rows[:5]]
+
+
 def _canonical_tier(value: str | None) -> str | None:
     normalized = _normalize(value)
     for aliases, canonical in (
@@ -57,7 +89,6 @@ def _canonical_tier(value: str | None) -> str | None:
         (("diamond", "kimcuong"), "diamond"),
         (("gold", "vang"), "gold"),
         (("member", "thanhvien", "chuacohang"), "member"),
-        (("none", "khongthamgia", "khongphaithanhvien"), "none"),
     ):
         if any(alias in normalized for alias in aliases):
             return canonical
@@ -73,21 +104,85 @@ def _canonical_group(value: str | None) -> str | None:
     return normalized or None
 
 
+def _trim_codes(code: str) -> list[str]:
+    """GC12V_CR151_T023 -> [GC12V_CR151_T023, GC12V_CR151, GC12V] (thử mã đầy đủ rồi mã gốc)."""
+    parts = (code or "").split("_")
+    return ["_".join(parts[:i]) for i in range(len(parts), 0, -1)] if code else []
+
+
+def _colors_for(colors_by_trim: dict, car_id: str, product_code: str) -> tuple[list[dict], bool]:
+    for code in _trim_codes(product_code):
+        if (car_id, code) in colors_by_trim:
+            return colors_by_trim[(car_id, code)], code != product_code
+    return [], False
+
+
+def _int_or_none(value: str | None) -> int | None:
+    try:
+        return int(float(value)) if value not in (None, "") else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _voucher_values(promotion: dict) -> list[dict]:
+    """"Fadil=30000000|Lux A2.0=60000000" -> danh sách giá trị voucher theo xe xăng đang sở hữu."""
+    values = []
+    for part in (promotion.get("voucher_values") or "").split("|"):
+        name, _, amount = part.partition("=")
+        if name.strip() and amount.strip().isdigit():
+            values.append({"owned_vehicle": name.strip(), "value_vnd": int(amount), "value_text": _format_vnd(int(amount))})
+    return values
+
+
+def _load_promotions() -> list[dict] | None:
+    """None nghĩa là CHƯA có dữ liệu ưu đãi (khác với 'không có ưu đãi')."""
+    if not (RELATIONAL_DIR / "promotions.csv").is_file():
+        return None
+    rows = _read_csv("promotions.csv")
+    needed = {"promo_name", "benefit_type", "valid_from", "valid_to", "audience", "is_active"}
+    return rows if not rows or needed <= set(rows[0]) else None
+
+
 @lru_cache(maxsize=1)
-def _load_data() -> tuple[list[dict], list[dict], list[dict]]:
+def _load_data() -> tuple[list[dict], list[dict], list[dict] | None]:
     cars = {
         row["car_id"]: row
         for row in _read_csv("cars_catalog.csv")
         if row.get("vehicle_type", "").lower() == "electric car"
     }
     prices = _read_csv("trims_pricing.csv")
+    color_rows = _read_csv("vehicle_colors.csv")
     rolling_rows = _read_csv("rolling_cost_matrix.csv")
+    colors_by_trim: dict[tuple[str, str], list[dict]] = {}
+    unavailable: dict[tuple[str, str], list[dict]] = {}
+    for row in color_rows:
+        key = (row["car_id"], row["trim_code"])
+        entry = {
+            "color": row["color_name"],
+            "color_name_vi": row["color_name_vi"],
+            "color_code": row["color_code"],
+            "color_hex": row["color_hex"],
+            "color_type": row.get("color_type", ""),
+            "extra_price_vnd": _int_or_none(row.get("color_extra_price_vnd")),
+            "image_url": row.get("image_url", ""),
+        }
+        if row.get("is_available", "").strip().lower() == "false":
+            unavailable.setdefault(key, []).append(entry)
+        else:
+            colors_by_trim.setdefault(key, []).append(entry)
 
     catalog = []
     for row in prices:
         car = cars.get(row["car_id"])
         if car is None:
             continue
+        price = int(row["price_vat_vnd"] or 0)
+        code = row.get("product_code", "")
+        colors, inferred = _colors_for(colors_by_trim, row["car_id"], code)
+        off_colors, _ = _colors_for(unavailable, row["car_id"], code)
+        # Một nguồn giá duy nhất: giá xe lấy từ trims_pricing, màu chỉ cộng phụ phí.
+        colors = [{**c, "total_car_price_vnd": None if c["extra_price_vnd"] is None else price + c["extra_price_vnd"]}
+                  for c in colors]
         catalog.append({
             "model_id": row["car_id"],
             "edition_id": row["trim_id"],
@@ -95,13 +190,18 @@ def _load_data() -> tuple[list[dict], list[dict], list[dict]]:
             "model_name": row["car_name"],
             "edition": row["trim_name"],
             "battery_option": row.get("battery_option", ""),
-            "price_vnd": int(row["price_vat_vnd"] or 0),
+            "price_vnd": price,
             "segment": None,
             "seats": None,
             "specs": {},
-            "colors": [],
+            "colors": colors,
+            "colors_inferred_from_base_trim": inferred,
+            "unavailable_colors": off_colors,
         })
-    return catalog, rolling_rows, []
+    return catalog, rolling_rows, _load_promotions()
+
+
+FILLER_RE = re.compile(r"\b(vinfast|phiên bản|phien ban|bản|ban|version)\b", re.I)
 
 
 def _resolve(queries: list[str] | None) -> tuple[list[dict], list[str]]:
@@ -111,11 +211,24 @@ def _resolve(queries: list[str] | None) -> tuple[list[dict], list[str]]:
     results: list[dict] = []
     unmatched = []
     for query in queries:
-        term = _normalize(query)
-        found = [v for v in catalog if term and term in _normalize(v["name"] + " " + v["edition"])]
+        cleaned = FILLER_RE.sub(" ", unicodedata.normalize("NFC", query or ""))
+        term = _normalize(cleaned)
+        found: list[dict] = []
+        if term:
+            # Tách tên dòng xe khỏi phần phiên bản: "VF 6 Plus" -> model "vf6" + "plus".
+            for vehicle in catalog:
+                model = _normalize(vehicle["model_name"])
+                if model and model in term:
+                    rest = term.replace(model, "", 1)
+                    if not rest or rest in _normalize(vehicle["edition"]).replace(model, "", 1):
+                        found.append(vehicle)
+            if not found:
+                found = [v for v in catalog if term in _normalize(v["model_name"] + " " + v["edition"])]
         if not found:
-            # Allow a query such as "VF 6 Ultra" to return that model's real trims.
-            found = [v for v in catalog if _normalize(v["model_name"]) in term]
+            # "VF 6 Ultra" -> trả các phiên bản thật của VF 6 và báo rõ phiên bản hỏi không có.
+            found = [v for v in catalog if term and _normalize(v["model_name"]) in term]
+            if found:
+                unmatched.append(f"{query} (không có đúng phiên bản này; liệt kê các phiên bản hiện có của dòng xe)")
         if not found:
             unmatched.append(query)
         for vehicle in found:
@@ -127,29 +240,36 @@ def _resolve(queries: list[str] | None) -> tuple[list[dict], list[str]]:
 @tool
 def search_vehicles(
     vehicle_queries: list[str] | None = None,
-    fields: list[str] | None = None,
+    fields: list[VehicleField] | None = None,
     seats: int | None = None,
     budget_million: float | None = None,
     segment: str | None = None,
 ) -> str:
-    """Look up VinFast car trims, official catalog prices, colors, and specifications.
+    """Look up VinFast car trims, official catalog prices and available exterior colors.
+
+    The structured catalog has NO data for seats, segment or technical specs (performance,
+    battery_charging, dimensions, other_specs); use search_gold_knowledge for those.
 
     Args:
         vehicle_queries: Car names or trims to look up, e.g. ["VF 6 Plus"].
-        fields: Requested fields: overview, price, colors, performance, battery_charging, dimensions, other_specs.
-        seats: Filter by the vehicle model's number of seats.
+        fields: Requested fields: overview, price, colors (performance, battery_charging, dimensions, other_specs are not available here).
+        seats: Not supported by the catalog yet; ignored with a note.
         budget_million: Maximum listed price, in million VND.
-        segment: Filter by vehicle segment.
+        segment: Not supported by the catalog yet; ignored with a note.
     """
     catalog, _, _ = _load_data()
     vehicles, unmatched = _resolve(vehicle_queries)
     fields = fields or ["overview", "price"]
-    vehicles = [v for v in vehicles
-                if (seats is None or str(v["seats"] or "") == str(seats))
-                and (budget_million is None or v["price_vnd"] <= budget_million * 1_000_000)
-                and (segment is None or _normalize(segment) in _normalize(v["segment"] or ""))]
+    notes = [f"Không tìm thấy xe: {q}" for q in unmatched]
+    missing = [name for name, value in (("seats", seats), ("segment", segment)) if value not in (None, "")]
+    missing += [name for name in fields if name in SPEC_FIELDS]
+    if missing:
+        notes.append(f"Catalog có cấu trúc chưa có dữ liệu {sorted(set(missing))}; dùng search_gold_knowledge cho "
+                     "thông số/số chỗ/phân khúc và KHÔNG kết luận rằng xe không tồn tại.")
+    if budget_million is not None:
+        vehicles = [v for v in vehicles if v["price_vnd"] <= budget_million * 1_000_000]
 
-    if not vehicle_queries and not any((seats is not None, budget_million is not None, segment)):
+    if not vehicle_queries and not budget_million:
         groups: dict[str, list[dict]] = {}
         for vehicle in catalog:
             groups.setdefault(vehicle["model_name"], []).append(vehicle)
@@ -158,7 +278,7 @@ def search_vehicles(
             "trims": len(rows),
             "price_range": f"{_format_vnd(min(v['price_vnd'] for v in rows))} - {_format_vnd(max(v['price_vnd'] for v in rows))}",
         } for model, rows in groups.items()]
-        return json.dumps({"models": models, "notes": [f"Không tìm thấy xe: {q}" for q in unmatched]}, ensure_ascii=False)
+        return json.dumps({"models": models, "notes": notes}, ensure_ascii=False)
 
     output = []
     for vehicle in vehicles:
@@ -169,61 +289,52 @@ def search_vehicles(
             record.update(price_vnd=vehicle["price_vnd"], price_text=_format_vnd(vehicle["price_vnd"]))
         if "colors" in fields:
             record["exterior_colors"] = vehicle["colors"]
-        requested_specs = {
-            "performance": ("max_power_kw", "max_torque_nm"),
-            "battery_charging": ("battery_capacity_kwh", "range_km", "fast_charge_mins", "fast_charge_dc_kw", "ac_charge_kw"),
-            "dimensions": ("wheelbase_mm",),
-        }
-        for field, keys in requested_specs.items():
-            if field in fields:
-                record[field] = {key: vehicle["specs"].get(key) for key in keys if vehicle["specs"].get(key) is not None}
-        if "other_specs" in fields:
-            record["other_specs"] = vehicle["specs"].get("specs", {})
+            record["colors_inferred_from_base_trim"] = vehicle["colors_inferred_from_base_trim"]
+            record["unavailable_color_count"] = len(vehicle["unavailable_colors"])
+            if not vehicle["colors"]:
+                notes.append(
+                    f"{vehicle['name']} {vehicle['edition']}: "
+                    + ("dữ liệu ghi các màu của phiên bản này hiện không khả dụng, cần xác nhận với đại lý."
+                       if vehicle["unavailable_colors"] else "catalog không có dữ liệu màu, không kết luận xe không có màu."))
         output.append(record)
 
     return json.dumps({
         "matched_versions": output,
-        "notes": [f"Không tìm thấy xe: {q}" for q in unmatched],
+        "notes": list(dict.fromkeys(notes)),
         "catalog_source": "dataset/gold/rdb_schema",
     }, ensure_ascii=False)
 
 
 @tool
 def lookup_car_color_options(vehicle_queries: list[str]) -> str:
-    """Look up available exterior colors and color surcharges for VinFast trims.
+    """Look up exterior colors and color surcharges for VinFast trims.
+
+    color_options lists colors currently marked available; unavailable_color_options lists colors the
+    data marks as unavailable (do not offer them as choices; tell the user to confirm with a dealer).
 
     Args:
         vehicle_queries: Car models or trims to look up, e.g. ["VF 3", "VF 6 Plus"].
     """
-    rows = _read_csv("vinfast_car_color_options.csv")
-    matched_options = []
-    unmatched = []
-    for query in vehicle_queries:
-        term = _normalize(query)
-        matches = [
-            row for row in rows
-            if term and term in _normalize(f"{row.get('model_name') or row.get('model_id', '')} {row.get('edition_name') or row.get('edition_id', '')}")
-        ]
-        if not matches:
-            unmatched.append(query)
-            continue
-        for row in matches:
-            option = {
-                "model": row.get("model_name") or row.get("model_id", ""),
-                "edition": row.get("edition_name") or row.get("edition_id", ""),
-                "color": row.get("color_name", ""),
-                "color_code": row.get("color_code", ""),
-                "color_type": row.get("color_type", ""),
-                "extra_price_vnd": int(row.get("color_extra_price_vnd") or 0),
-                "total_car_price_vnd": int(row.get("total_car_price_vnd") or 0),
-                "image_url": row.get("image_url", ""),
-            }
-            if option not in matched_options:
-                matched_options.append(option)
+    vehicles, unmatched = _resolve(vehicle_queries)
+    available, unavailable = [], []
+    for vehicle in vehicles:
+        base = {"model": vehicle["model_name"], "edition": vehicle["edition"]}
+        for color in vehicle["colors"]:
+            option = {**base, **color}
+            if option not in available:
+                available.append(option)
+        for color in vehicle["unavailable_colors"]:
+            option = {**base, **color}
+            if option not in unavailable:
+                unavailable.append(option)
+    notes = [f"Không tìm thấy màu xe: {query}" for query in unmatched]
+    if unavailable:
+        notes.append("Một số màu được dữ liệu ghi là không khả dụng; cần xác nhận với đại lý trước khi tư vấn.")
     return json.dumps({
-        "color_options": matched_options,
-        "notes": [f"Không tìm thấy màu xe: {query}" for query in unmatched],
-        "catalog_source": "dataset/gold/rdb_schema/vinfast_car_color_options.csv",
+        "color_options": available,
+        "unavailable_color_options": unavailable,
+        "notes": notes,
+        "catalog_source": "dataset/gold/rdb_schema/vehicle_colors.csv",
     }, ensure_ascii=False)
 
 
@@ -235,10 +346,10 @@ def lookup_province_fees(province: str, vehicle_queries: list[str] | None = None
         province: Province or city, e.g. "Hà Nội" or "TP. Hồ Chí Minh".
         vehicle_queries: Optional car models or trims for an estimated car registration total.
     """
-    rows = _read_csv("vinfast_provinces_fees.csv")
-    fee_row = next((row for row in rows if _normalize(row["province_name"]) == _normalize(province)), None)
+    fee_row, candidates = _match_province(province)
     if fee_row is None:
-        return json.dumps({"error": f"Không tìm thấy phí cho tỉnh/thành: {province}"}, ensure_ascii=False)
+        return json.dumps({"error": f"Không tìm thấy phí cho tỉnh/thành: {province}",
+                           "valid_candidates": candidates}, ensure_ascii=False)
 
     registration_rate = float(fee_row["car_registration_fee_pct"] or 0)
     fees = {
@@ -271,21 +382,35 @@ def lookup_province_fees(province: str, vehicle_queries: list[str] | None = None
         "fees": fees,
         "car_estimates": estimates,
         "notes": [f"Không tìm thấy xe: {query}" for query in unmatched],
-        "catalog_source": "dataset/gold/rdb_schema/vinfast_provinces_fees.csv",
+        "catalog_source": "dataset/gold/rdb_schema/provinces.csv",
     }, ensure_ascii=False)
 
 
 @tool
-def calculate_vehicle_tco(vehicle_queries: list[str], years: int = 5, location: str | None = None) -> str:
+def calculate_vehicle_tco(vehicle_queries: list[str], location: str, years: int | None = None) -> str:
     """Calculate known purchase and ownership costs from the local VinFast fee tables.
+
+    Both location and years must come from the user; ask them if missing instead of assuming.
 
     Args:
         vehicle_queries: Car names or trims, e.g. ["VF 6 Plus"].
-        years: Ownership period, at least one year.
-        location: Province or city, e.g. "Hà Nội".
+        location: Province or city the user stated, e.g. "Hà Nội".
+        years: Ownership period stated by the user, at least one year.
     """
+    if years is None:
+        return json.dumps({"status": "need_input", "missing": ["years"],
+                           "message": "Hỏi người dùng muốn tính chi phí trong bao nhiêu năm; không tự điền."},
+                          ensure_ascii=False)
     if years < 1 or years > 50:
         return json.dumps({"error": "years phải nằm trong khoảng 1 đến 50"}, ensure_ascii=False)
+    if not (location or "").strip():
+        return json.dumps({"status": "need_input", "missing": ["location"],
+                           "message": "Hỏi người dùng sẽ đăng ký xe ở tỉnh/thành nào."}, ensure_ascii=False)
+    province, candidates = _match_province(location)
+    if province is None:
+        return json.dumps({"error": f"Không nhận ra tỉnh/thành: {location}", "valid_candidates": candidates},
+                          ensure_ascii=False)
+    province_key = _normalize(province["province_name"])
     vehicles, unmatched = _resolve(vehicle_queries)
     _, rolling_rows, _ = _load_data()
     results = []
@@ -294,14 +419,14 @@ def calculate_vehicle_tco(vehicle_queries: list[str], years: int = 5, location: 
                     if r["car_id"] == vehicle["model_id"]
                     and _normalize(r["trim_name"]) == _normalize(vehicle["edition"])
                     and _normalize(r.get("battery_option")) == _normalize(vehicle["battery_option"])
-                    and _normalize(r["province_name"]) == _normalize(location)), None) if location else None
+                    and _normalize(r["province_name"]) == province_key), None)
         if not row:
             results.append({
                 "vehicle": vehicle["name"], "edition": vehicle["edition"],
                 "listed_price_vnd": vehicle["price_vnd"],
                 "listed_price_text": _format_vnd(vehicle["price_vnd"]),
-                "location": location,
-                "note": "Không có bảng phí cho địa phương này; chưa tính tổng lăn bánh.",
+                "location": province["province_name"],
+                "note": "Bảng chi phí lăn bánh không có dòng cho xe này ở địa phương này; chưa tính tổng lăn bánh.",
             })
             continue
         initial = int(row["total_rolling_cost_vnd"])
@@ -309,11 +434,12 @@ def calculate_vehicle_tco(vehicle_queries: list[str], years: int = 5, location: 
         total = initial + annual * (years - 1)
         results.append({
             "vehicle": vehicle["name"], "edition": vehicle["edition"], "years": years,
-            "location": location, "initial_cost_vnd": initial,
+            "location": province["province_name"], "initial_cost_vnd": initial,
             "initial_cost_text": _format_vnd(initial),
             "estimated_known_cost_vnd": total,
             "estimated_known_cost_text": _format_vnd(total),
-            "excludes": ["điện, bảo dưỡng, khấu hao, giá bán lại, khuyến mãi"],
+            "excludes": ["điện", "bảo dưỡng", "khấu hao", "giá bán lại", "khuyến mãi",
+                         "phí kiểm định định kỳ các năm sau"],
         })
     return json.dumps({"tco": results, "notes": [f"Không tìm thấy xe: {q}" for q in unmatched]}, ensure_ascii=False)
 
@@ -321,24 +447,30 @@ def calculate_vehicle_tco(vehicle_queries: list[str], years: int = 5, location: 
 @tool
 def get_eligible_promotions(
     vehicle_queries: list[str] | None = None,
-    vinclub_tier: str | None = None,
-    customer_group: str | None = None,
+    vinclub_tier: VinclubTier | None = None,
+    customer_group: CustomerGroup | None = None,
     purchase_channel: str | None = None,
 ) -> str:
     """Check current VinFast promotions and calculate explicit cash discounts when eligible.
 
     Args:
         vehicle_queries: Car names or trims, e.g. ["VF 6 Plus"].
-        vinclub_tier: Customer tier: platinum, gold, diamond, member, or none.
-        customer_group: Eligibility group, such as public_security_military or green_switch.
-        purchase_channel: Sales channel, such as O2O.
+        vinclub_tier: Customer tier the user stated: platinum, gold, diamond or member. Leave null if unknown.
+        customer_group: Eligibility group the user stated: public_security_military or green_switch. Leave null if unknown.
+        purchase_channel: Sales channel the user stated, such as O2O. Leave null if unknown.
     """
     vehicles, unmatched = _resolve(vehicle_queries) if vehicle_queries else ([], [])
     _, _, promotions = _load_data()
+    if promotions is None:
+        return json.dumps({
+            "status": "data_unavailable",
+            "message": "Chưa có dữ liệu ưu đãi có cấu trúc. KHÔNG kết luận là hiện không có ưu đãi và không nêu số tiền ưu đãi; "
+                       "hướng dẫn người dùng liên hệ đại lý hoặc kênh chính thức của VinFast.",
+        }, ensure_ascii=False)
     today = date.today()
     tier = _canonical_tier(vinclub_tier)
     group = _canonical_group(customer_group)
-    channel = _normalize(purchase_channel)
+    channel = _normalize(purchase_channel) or None
     applicable = []
     conditional = []
     for promotion in promotions:
@@ -375,6 +507,8 @@ def get_eligible_promotions(
                 "discount_percent": float(promotion.get("discount_percent") or 0),
                 "loyalty_percent": float(promotion.get("loyalty_percent") or 0),
                 "description": promotion.get("description", ""),
+                "valid_to": promotion.get("valid_to") or None,
+                **({"voucher_values": _voucher_values(promotion)} if promotion.get("voucher_values") else {}),
             } for promotion in applicable],
             "conditional_promotions": conditional,
             "notes": ["Chưa có xe cụ thể nên chưa tính số tiền ưu đãi."],
@@ -384,6 +518,7 @@ def get_eligible_promotions(
     for vehicle in vehicles:
         model = vehicle["model_name"]
         benefits = []
+        used_promotions = []
         for promotion in applicable:
             allowed_models = [part.strip() for part in promotion.get("applies_to", "").split("|") if part.strip()]
             if allowed_models and model not in allowed_models:
@@ -391,7 +526,11 @@ def get_eligible_promotions(
             price = vehicle["price_vnd"]
             discount = round(price * float(promotion.get("discount_percent") or 0) / 100)
             discount += int(float(promotion.get("discount_amount_vnd") or 0))
-            benefit = {"name": promotion["promo_name"], "description": promotion.get("description", "")}
+            benefit = {"name": promotion["promo_name"], "description": promotion.get("description", ""),
+                       "valid_to": promotion.get("valid_to") or None}
+            if promotion.get("voucher_values"):
+                benefit["voucher_values"] = _voucher_values(promotion)
+                benefit["note"] = "Voucher theo xe xăng VinFast khách đang sở hữu; không trừ trực tiếp vào giá xe."
             if promotion.get("benefit_type") == "cash_discount" and discount:
                 benefit.update(
                     discount_vnd=discount,
@@ -407,8 +546,9 @@ def get_eligible_promotions(
                     "note": "Tích điểm, không trừ vào giá xe.",
                 }
             benefits.append(benefit)
+            used_promotions.append(promotion)
         cash_benefits = [benefit for benefit in benefits if "discount_vnd" in benefit]
-        stackable = all(promotion.get("stack_policy") == "stackable" for promotion in applicable)
+        stackable = all(promotion.get("stack_policy") == "stackable" for promotion in used_promotions)
         results.append({
             "vehicle": vehicle["name"], "edition": vehicle["edition"],
             "listed_price_text": _format_vnd(vehicle["price_vnd"]),
@@ -431,5 +571,4 @@ VINFAST_TOOLS = [
     lookup_province_fees,
     calculate_vehicle_tco,
     get_eligible_promotions,
-    lookup_official_web,
 ]

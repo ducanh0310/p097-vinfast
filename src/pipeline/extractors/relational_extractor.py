@@ -5,6 +5,7 @@ Transforms complex nested JSON into structured SilverVehicle records and knowled
 
 import json
 import logging
+import re
 from collections.abc import Generator
 from datetime import UTC
 from pathlib import Path
@@ -89,6 +90,99 @@ def normalize_color_attributes(color_code: str, raw_data: dict[str, Any]) -> dic
         "image_url": image_url,
         "is_available": available,
     }
+
+
+def _fmt_vnd(amount: int | float) -> str:
+    return f"{int(amount):,}".replace(",", ".")
+
+
+def _car_fee(fees: list[dict[str, Any]], zone: str | None) -> int:
+    """Phí biển số ô tô theo snapshot. zone=None nghĩa là khu vực khác KV1. Thiếu dữ liệu thì lỗi rõ ràng."""
+    for fee in fees:
+        fee_zone = fee.get("zone")
+        if fee.get("carLicenseFee") is None:
+            continue
+        if (zone is not None and fee_zone == zone) or (zone is None and fee_zone != "KV1"):
+            return int(fee["carLicenseFee"])
+    raise ValueError(f"Snapshot thiếu carLicenseFee cho khu vực {zone or 'khác KV1'}; không dùng số mặc định cũ")
+
+
+def _price_of(color_data: dict[str, Any]) -> int | None:
+    """Giá tổng của màu từ snapshot; None nếu thiếu (khác với miễn phí)."""
+    price = color_data.get("price")
+    price = price.get("value") if isinstance(price, dict) else price
+    try:
+        return int(float(price)) if price not in (None, "") else None
+    except (TypeError, ValueError):
+        return None
+
+
+_TIER_BY_ID = {
+    "member_tier_platinum": "platinum", "member_tier_gold": "gold",
+    "member_tier_diamond": "diamond", "member_tier_member": "member",
+}
+_PROMO_AUDIENCE = {"o2o": "all", "vinclubTier": "vinclub_tier", "caqd": "public_security_military", "green": "green_switch"}
+
+
+def _num(value: Any) -> str:
+    try:
+        return f"{float(value):g}"
+    except (TypeError, ValueError):
+        return ""
+
+
+def _build_promotions(data: dict[str, Any], snapshot_dt: str) -> list[dict[str, Any]]:
+    """Một dòng = một chương trình ưu đãi từ mục `promotion` của snapshot.
+
+    Hết hạn / ngừng áp dụng: xoá dòng hoặc đặt is_active=false, valid_to trong quá khứ.
+    stack_policy luôn là `unknown` vì snapshot không nói chương trình nào cộng dồn được.
+    """
+    rows: list[dict[str, Any]] = []
+    for record in sorted(data.get("promotion", {}).get("records", []), key=lambda r: str(r.get("ID"))):
+        promo_type = record.get("type") or ""
+        promo_id = record.get("ID") or ""
+        tier = _TIER_BY_ID.get(promo_id, "") if promo_type == "vinclubTier" else ""
+        if promo_type == "vinclubTier" and not tier:
+            continue  # "Không áp dụng" (hạng 0): không có quyền lợi để lưu
+        description = record.get("description") or ""
+        loyalty = re.search(r"tích điểm[^\d]{0,30}?(\d+(?:[.,]\d+)?)\s*%", description, re.I)
+        campaign = record.get("campaign")
+        if isinstance(campaign, str) and campaign.strip():
+            try:
+                campaign = json.loads(campaign)
+            except ValueError:
+                campaign = {}
+        campaign = campaign if isinstance(campaign, dict) else {}
+        voucher_values = "|".join(
+            f"{v['name']}={int(v['value'])}" for v in campaign.get("vehicles", [])
+            if v.get("name") and v.get("value") is not None
+        )
+        valid_to = ""
+        end_match = re.search(r"đến hết\s+(\d{1,2})/(\d{1,2})/(\d{4})", description)
+        if end_match:
+            day, month, year = (int(g) for g in end_match.groups())
+            valid_to = f"{year:04d}-{month:02d}-{day:02d}"
+        rows.append({
+            "promo_id": promo_id,
+            "promo_name": record.get("name") or "",
+            "promo_type": promo_type,
+            "benefit_type": "voucher" if voucher_values else "cash_discount",
+            "discount_percent": _num(record.get("discountPercent")) if record.get("discountPercent") is not None else "",
+            "loyalty_percent": _num(loyalty.group(1).replace(",", ".")) if loyalty else "",
+            "discount_amount_vnd": "",
+            "voucher_values": voucher_values,
+            "applies_to": "",
+            "stack_policy": "unknown",
+            "audience": _PROMO_AUDIENCE.get(promo_type, promo_type),
+            "tier": tier,
+            "channel": "O2O" if promo_type == "o2o" else "",
+            "valid_from": (campaign.get("onlineFrom") or "")[:10],
+            "valid_to": valid_to,
+            "is_active": str(bool(record.get("active"))).lower(),
+            "description": description,
+            "snapshot_datetime": snapshot_dt,
+        })
+    return rows
 
 
 class RelationalExtractor(BaseExtractor):
@@ -246,10 +340,13 @@ class RelationalExtractor(BaseExtractor):
         for fee_info in fees:
             zone = fee_info.get("zone", "KV1")
             license_fee = (
-                fee_info.get("carLicenseFee", 20000000)
+                fee_info.get("carLicenseFee")
                 if vehicle_type == "car"
-                else fee_info.get("bikeLicenseFeeMedium", 2000000)
+                else fee_info.get("bikeLicenseFeeMedium")
             )
+            if license_fee is None:
+                logger.warning("Snapshot thiếu phí biển số cho khu vực %s (%s); bỏ qua", zone, vehicle_type)
+                continue
             rolling_costs[zone] = {
                 "license_plate_fee": license_fee,
                 "description": "Khu vực 1 (Hà Nội, TP.HCM)" if zone == "KV1" else "Các tỉnh thành khác",
@@ -299,8 +396,20 @@ class RelationalExtractor(BaseExtractor):
 
         md_lines.append("")
         md_lines.append("### Lệ phí đăng ký và biển số tham khảo:")
-        md_lines.append("- Khu vực 1 (Hà Nội, TP.HCM): 20.000.000 VNĐ (ô tô) / 1.000.000 - 4.000.000 VNĐ (xe máy)")
-        md_lines.append("- Khu vực 2, 3: 1.000.000 VNĐ (ô tô) / 50.000 - 150.000 VNĐ (xe máy)")
+        for zone_label, zone_fee in (
+            ("Khu vực 1 (Hà Nội, TP.HCM)", next((f for f in fees if f.get("zone") == "KV1"), None)),
+            ("Khu vực 2, 3", next((f for f in fees if f.get("zone") not in (None, "KV1")), None)),
+        ):
+            if not zone_fee:
+                continue
+            parts = []
+            if zone_fee.get("carLicenseFee") is not None:
+                parts.append(f"{_fmt_vnd(zone_fee['carLicenseFee'])} VNĐ (ô tô)")
+            low, high = zone_fee.get("bikeLicenseFeeLow"), zone_fee.get("bikeLicenseFeeHigh")
+            if low is not None and high is not None:
+                parts.append(f"{_fmt_vnd(low)} - {_fmt_vnd(high)} VNĐ (xe máy)")
+            if parts:
+                md_lines.append(f"- {zone_label}: " + " / ".join(parts))
         md_lines.append("- Ô tô điện chạy pin được miễn 100% lệ phí trước bạ theo quy định của Chính phủ.")
 
         searchable_md = "\n".join(md_lines)
@@ -399,18 +508,33 @@ class RelationalExtractor(BaseExtractor):
                 "snapshot_datetime": snapshot_dt,
             })
 
-        # 3. Provinces
+        # 3. Provinces and zone-based fees
         provinces: list[dict[str, Any]] = []
         raw_provinces = data.get("objects", {}).get("provinces", [])
+        fees_by_zone = {
+            fee.get("zone", ""): fee
+            for fee in data.get("objects", {}).get("fees", [])
+        }
         for p in raw_provinces:
+            fee = fees_by_zone.get(p.get("zone", ""), {})
             provinces.append({
-                "province_id": p.get("id", ""),
+                "province_id": p.get("id") or p.get("ID", ""),
                 "province_name": p.get("name", ""),
-                "region_code": p.get("region", "2"),
+                "region_code": p.get("region", p.get("zone", "2")),
+                "zone": p.get("zone", ""),
+                "car_license_plate_fee_vnd": fee.get("carLicenseFee", 0),
+                "car_registration_fee_pct": p.get("carRegistrationFee", 0),
+                "bike_license_fee_low_vnd": fee.get("bikeLicenseFeeLow", 0),
+                "bike_license_fee_medium_vnd": fee.get("bikeLicenseFeeMedium", 0),
+                "bike_license_fee_high_vnd": fee.get("bikeLicenseFeeHigh", 0),
+                "bike_registration_fee_pct": p.get("bikeRegistrationFee", 0),
                 "snapshot_datetime": snapshot_dt,
             })
 
-        # 4. Fee Rules
+        # 4. Fee Rules (phí biển số lấy từ snapshot, không hard-code)
+        raw_fees = data.get("objects", {}).get("fees", [])
+        plate_hn_hcm = _car_fee(raw_fees, "KV1")
+        plate_other = _car_fee(raw_fees, None)
         fee_rules: list[dict[str, Any]] = [
             {
                 "fee_code": "REGISTRATION_FEE",
@@ -424,16 +548,16 @@ class RelationalExtractor(BaseExtractor):
                 "fee_code": "PLATE_FEE_HN_HCM",
                 "fee_name": "Phí cấp biển số Khu vực I (Hà Nội, TP.HCM)",
                 "rate_percent": "0.0",
-                "fixed_amount_vnd": 20000000,
-                "description": "Thông tư 60/2023/TT-BTC: Hà Nội và TP.HCM áp dụng 20.000.000 VNĐ",
+                "fixed_amount_vnd": plate_hn_hcm,
+                "description": f"Theo snapshot VinFast: Hà Nội và TP.HCM áp dụng {_fmt_vnd(plate_hn_hcm)} VNĐ (đối chiếu Thông tư 155/2025/TT-BTC, hiệu lực từ 01/01/2026)",
                 "snapshot_datetime": snapshot_dt,
             },
             {
                 "fee_code": "PLATE_FEE_OTHER",
                 "fee_name": "Phí cấp biển số Khu vực II & III (Tỉnh/Thành khác)",
                 "rate_percent": "0.0",
-                "fixed_amount_vnd": 1000000,
-                "description": "Thông tư 60/2023/TT-BTC: Các tỉnh thành còn lại 1.000.000 VNĐ",
+                "fixed_amount_vnd": plate_other,
+                "description": f"Theo snapshot VinFast: các tỉnh thành còn lại {_fmt_vnd(plate_other)} VNĐ (cần đối chiếu Điều 5 Thông tư 155/2025/TT-BTC)",
                 "snapshot_datetime": snapshot_dt,
             },
             {
@@ -462,28 +586,21 @@ class RelationalExtractor(BaseExtractor):
             },
         ]
 
-        # 5. Rolling Cost Matrix (Major representative regions)
-        key_provinces = [
-            {"id": "01", "name": "Hà Nội", "plate_fee": 20000000},
-            {"id": "79", "name": "TP. Hồ Chí Minh", "plate_fee": 20000000},
-            {"id": "48", "name": "Đà Nẵng", "plate_fee": 1000000},
-            {"id": "31", "name": "Hải Phòng", "plate_fee": 1000000},
-            {"id": "92", "name": "Cần Thơ", "plate_fee": 1000000},
-            {"id": "other", "name": "Các tỉnh thành khác (Khu vực II, III)", "plate_fee": 1000000},
-        ]
+        fixed_fee = {rule["fee_code"]: rule["fixed_amount_vnd"] for rule in fee_rules}
 
+        # 5. Rolling Cost Matrix for every province in the snapshot
         rolling_matrix: list[dict[str, Any]] = []
         for t in trims_pricing:
             price = t["price_vat_vnd"]
             if price <= 0:
                 continue
 
-            for prov in key_provinces:
-                plate_fee = prov["plate_fee"]
+            for prov in provinces:
+                plate_fee = prov["car_license_plate_fee_vnd"]
                 reg_fee = 0
-                insp_fee = 340000
-                road_fee = 1560000
-                ins_fee = 480700
+                insp_fee = fixed_fee["INSPECTION_FEE"]
+                road_fee = fixed_fee["ROAD_MAINTENANCE_FEE"]
+                ins_fee = fixed_fee["MANDATORY_INSURANCE"]
                 total_rolling = price + plate_fee + reg_fee + insp_fee + road_fee + ins_fee
 
                 rolling_matrix.append({
@@ -491,7 +608,7 @@ class RelationalExtractor(BaseExtractor):
                     "car_name": t["car_name"],
                     "trim_name": t["trim_name"],
                     "battery_option": t["battery_option"],
-                    "province_name": prov["name"],
+                    "province_name": prov["province_name"],
                     "list_price_vnd": price,
                     "registration_fee_vnd": reg_fee,
                     "license_plate_fee_vnd": plate_fee,
@@ -525,10 +642,24 @@ class RelationalExtractor(BaseExtractor):
                         trim_label = "Tiêu chuẩn"
 
                     color_codes = ed_data.get("listColor", [])
+                    # Giá nền = giá màu rẻ nhất của trim. `priceValue` của snapshot đôi khi là giá màu cao cấp
+                    # (VF 3 Plus 304tr, VF 5 Plus 504tr, Minio Green 196tr) nên không dùng làm giá nền.
+                    known_prices = [
+                        price for code in color_codes
+                        if isinstance(ed_data.get(code), dict) and (price := _price_of(ed_data[code])) is not None
+                    ]
+                    try:
+                        base_price = min(known_prices) if known_prices else int(float(ed_data.get("priceValue") or 0))
+                    except (TypeError, ValueError):
+                        base_price = 0
                     for c_code in color_codes:
                         c_data = ed_data.get(c_code)
                         if isinstance(c_data, dict):
                             norm = normalize_color_attributes(c_code, c_data)
+                            total_color_price = _price_of(c_data)
+                            # Không clamp và không suy "miễn phí" khi thiếu giá: giá âm/thiếu để trống.
+                            extra_price = None if total_color_price is None else total_color_price - base_price
+                            known_extra = extra_price is not None and extra_price >= 0
                             vehicle_colors.append({
                                 "car_id": c_id,
                                 "car_name": c_name,
@@ -539,9 +670,12 @@ class RelationalExtractor(BaseExtractor):
                                 "color_name": norm["color_name"],
                                 "color_name_vi": norm["color_name_vi"],
                                 "color_hex": norm["color_hex"],
+                                "color_type": ("Màu nâng cao" if extra_price else "Màu cơ bản") if known_extra else "",
+                                "color_extra_price_vnd": extra_price if known_extra else "",
+                                "total_car_price_vnd": total_color_price if total_color_price is not None else "",
                                 "color_roof": norm["color_roof"],
                                 "image_url": norm["image_url"],
-                                "is_available": norm["is_available"],
+                                "is_available": norm["is_available"] if "available" in c_data else "",  # rỗng = không rõ
                                 "snapshot_datetime": snapshot_dt,
                             })
 
@@ -552,4 +686,5 @@ class RelationalExtractor(BaseExtractor):
             "provinces": provinces,
             "fee_rules": fee_rules,
             "rolling_cost_matrix": rolling_matrix,
+            "promotions": _build_promotions(data, snapshot_dt),
         }

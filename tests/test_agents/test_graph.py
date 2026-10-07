@@ -163,7 +163,7 @@ def test_promotion_guard_reports_omitted_cash_discount():
 
 def test_profile_extracts_entities_from_tool_call():
     messages = [
-        HumanMessage(content="Tính TCO VF 6 ở Hà Nội"),
+        HumanMessage(content="Tính TCO VF 6 ở Hà Nội trong 5 năm"),
         AIMessage(content="", tool_calls=[{
             "name": "calculate_vehicle_tco",
             "args": {"vehicle_queries": ["VF 6"], "location": "Hà Nội", "years": 5},

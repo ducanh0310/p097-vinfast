@@ -2,6 +2,7 @@
 
 import json
 import re
+import unicodedata
 import urllib.request
 from html.parser import HTMLParser
 from pathlib import Path
@@ -62,9 +63,29 @@ def _host_allowed(url: str, domains: list[str]) -> bool:
     return parsed.scheme == "https" and any(host == domain or host.endswith("." + domain) for domain in domains)
 
 
+STOP_TERMS = {"mau", "cua", "cho", "voi", "xe", "la", "co", "va", "nhu", "the"}
+
+
+def _fold(text: str | None) -> str:
+    """Bỏ dấu tiếng Việt, hạ chữ thường, giữ khoảng trắng giữa các từ."""
+    text = unicodedata.normalize("NFKD", (text or "").replace("đ", "d").replace("Đ", "D"))
+    return "".join(char for char in text if not unicodedata.combining(char)).lower()
+
+
 def _normalize(text: str | None) -> str:
-    text = (text or "").replace("đ", "d").replace("Đ", "D").lower()
-    return re.sub(r"[^a-z0-9]+", "", text)
+    return re.sub(r"[^a-z0-9]+", "", _fold(text))
+
+
+def _topic_terms(topic: str) -> list[str]:
+    words = re.findall(r"[a-z0-9]+", _fold(topic))
+    terms = [word for word in dict.fromkeys(words) if len(word) >= 2 and word not in STOP_TERMS]
+    return terms or ["noi", "that", "ghe", "chat", "lieu"]
+
+
+def _line_hits(line: str, terms: list[str]) -> int:
+    folded = _fold(line)
+    tokens = set(re.findall(r"[a-z0-9]+", folded))
+    return sum(1 for term in terms if term in tokens or (len(term) >= 4 and term in folded))
 
 
 def _fetch_page(url: str, domains: list[str]) -> str:
@@ -107,7 +128,7 @@ def lookup_official_web(vehicle: str, topic: str) -> str:
     try:
         config = _load_source_config()
     except (OSError, json.JSONDecodeError) as exc:
-        result["errors"].append(f"Không đọc được cấu hình nguồn web: {type(exc).__name__}.")
+        result["errors"].append(f"Không đọc được cấu hình nguồn web ({DATA_DIR / 'web_sources.json'}): {type(exc).__name__}.")
         return json.dumps(result, ensure_ascii=False)
 
     domains = config.get("allowed_domains", [])
@@ -116,15 +137,14 @@ def lookup_official_web(vehicle: str, topic: str) -> str:
         for model in {item["model_name"] for item in vehicles}
         for url in config.get("sources", {}).get(model, [])
     ))
-    terms = [word for word in re.findall(r"[\wÀ-ỹ]+", _normalize(topic)) if len(word) >= 3]
-    if not terms:
-        terms = ["noithat", "ghe", "chatlieu"]
+    terms = _topic_terms(topic)
+    need = max(1, len(terms) // 2)  # cần khớp ít nhất một nửa số từ khoá
 
     for url in source_urls:
         try:
             parser = _TextParser()
             parser.feed(_fetch_page(url, domains))
-            matching = [line for line in parser.lines if any(term in _normalize(line) for term in terms)]
+            matching = [line for line in parser.lines if _line_hits(line, terms) >= need]
             if matching:
                 result["sources"].append({"url": url, "passages": matching[:5]})
         except Exception as exc:
