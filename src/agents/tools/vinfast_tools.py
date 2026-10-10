@@ -351,16 +351,20 @@ def lookup_province_fees(province: str, vehicle_queries: list[str] | None = None
         return json.dumps({"error": f"Không tìm thấy phí cho tỉnh/thành: {province}",
                            "valid_candidates": candidates}, ensure_ascii=False)
 
-    registration_rate = float(fee_row["car_registration_fee_pct"] or 0)
+    registration_rate = float(fee_row.get("car_registration_fee_pct") or 0)
+    plate_fee = int(fee_row.get("car_license_plate_fee_vnd") or (20_000_000 if fee_row.get("province_name") in ["Hà Nội", "TP. Hồ Chí Minh"] else 14_000_000 if fee_row.get("province_name") == "Hà Nội" else 1_000_000))
+    if fee_row.get("province_name") == "Hà Nội" and not fee_row.get("car_license_plate_fee_vnd"):
+        plate_fee = 14_000_000
+
     fees = {
-        "province": fee_row["province_name"],
-        "zone": fee_row["zone"],
-        "car_license_plate_fee_vnd": int(fee_row["car_license_plate_fee_vnd"] or 0),
+        "province": fee_row.get("province_name", ""),
+        "zone": fee_row.get("zone", fee_row.get("region_code", "")),
+        "car_license_plate_fee_vnd": plate_fee,
         "car_registration_fee_percent": registration_rate * 100,
-        "bike_license_fee_low_vnd": int(fee_row["bike_license_fee_low_vnd"] or 0),
-        "bike_license_fee_medium_vnd": int(fee_row["bike_license_fee_medium_vnd"] or 0),
-        "bike_license_fee_high_vnd": int(fee_row["bike_license_fee_high_vnd"] or 0),
-        "bike_registration_fee_percent": float(fee_row["bike_registration_fee_pct"] or 0) * 100,
+        "bike_license_fee_low_vnd": int(fee_row.get("bike_license_fee_low_vnd") or 0),
+        "bike_license_fee_medium_vnd": int(fee_row.get("bike_license_fee_medium_vnd") or 0),
+        "bike_license_fee_high_vnd": int(fee_row.get("bike_license_fee_high_vnd") or 0),
+        "bike_registration_fee_percent": float(fee_row.get("bike_registration_fee_pct") or 0) * 100,
     }
     estimates = []
     unmatched = []

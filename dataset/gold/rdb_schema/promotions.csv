@@ -1,0 +1,8 @@
+﻿promo_id,promo_name,promo_type,benefit_type,discount_percent,loyalty_percent,discount_amount_vnd,voucher_values,applies_to,stack_policy,audience,tier,channel,valid_from,valid_to,is_active,description,snapshot_datetime
+caqd,Ưu đãi Khách hàng ngành Công an và Quân đội,caqd,cash_discount,5,,,,,unknown,public_security_military,,,,,true,Ưu đãi Khách hàng ngành Công an và Quân đội,2026-10-02 10:12:20 UTC
+green,Tri ân Khách hàng xe xăng VinFast chuyển đổi Xanh,green,voucher,,,,VinFast Fadil=30000000|VinFast Lux A2.0=60000000|VinFast Lux SA2.0=80000000,,unknown,green_switch,,,2026-08-01,2026-12-31,true,Voucher có giá trị sử dụng đến hết 31/12/2026.,2026-10-02 10:12:20 UTC
+member_tier_diamond,Hạng Diamond,vinclubTier,cash_discount,4.5,4.5,,,,unknown,vinclub_tier,diamond,,,,true,"Ưu đãi 9%, trong đó giảm giá 4,5% và tích điểm chi tiêu 4,5%",2026-10-02 10:12:20 UTC
+member_tier_gold,Hạng Gold,vinclubTier,cash_discount,1.5,1.5,,,,unknown,vinclub_tier,gold,,,,true,"Ưu đãi 3%, trong đó giảm giá 1,5% và tích điểm chi tiêu 1,5%",2026-10-02 10:12:20 UTC
+member_tier_member,Hạng Member (Chưa có hạng VinClub),vinclubTier,cash_discount,0.5,0.5,,,,unknown,vinclub_tier,member,,,,true,"Ưu đãi 1%, trong đó giảm giá 0,5% và tích điểm chi tiêu 0,5%",2026-10-02 10:12:20 UTC
+member_tier_platinum,Hạng Platinum,vinclubTier,cash_discount,3,3,,,,unknown,vinclub_tier,platinum,,,,true,"Ưu đãi 6%, trong đó giảm giá 3% và tích điểm chi tiêu 3%",2026-10-02 10:12:20 UTC
+o2o,Ưu đãi mua xe qua Kinh doanh O2O,o2o,cash_discount,2,,,,,unknown,all,,O2O,,,true,Ưu đãi mua xe qua Kinh doanh O2O,2026-10-02 10:12:20 UTC

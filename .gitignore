@@ -29,7 +29,11 @@ env/
 Thumbs.db
 
 # Data (never commit large data)
-dataset/
+dataset/bronze/
+dataset/silver/
+dataset/pdf/
+dataset/gold/by_topic/
+dataset/gold/*.json
 data/
 *.db
 *.sqlite3
