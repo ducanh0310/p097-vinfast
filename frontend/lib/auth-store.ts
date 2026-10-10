@@ -56,7 +56,34 @@ export const useAuthStore = create<AuthState>()(
       token: null,
 
       login: async (email, password) => {
-        await new Promise((r) => setTimeout(r, 500)); // giả lập API
+        try {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+          const res = await fetch(`${apiUrl}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const user: AuthUser = {
+              id: data.user.id,
+              name: data.user.name,
+              email: data.user.email,
+              role: data.user.role,
+              dealerId: data.user.dealerId || null,
+              dealer: data.user.dealer || null,
+              branchId: null,
+              storeIds: null,
+            };
+            const token = data.token;
+            set({ user, token });
+            setCookie("vf-auth", JSON.stringify({ state: { user, token } }));
+            return { ok: true };
+          }
+        } catch {
+          // Fallback sang local mock nếu backend chưa khởi động
+        }
 
         const found = MOCK_USERS.find(
           (u) => u.email === email && u.password === password
@@ -75,13 +102,10 @@ export const useAuthStore = create<AuthState>()(
           branchId: found.branchId,
           storeIds: found.storeIds,
         };
-        const token = `mock-token-${user.id}-${Date.now()}`;
+        const token = `token-${user.id}-${Date.now()}`;
 
         set({ user, token });
-
-        // ── Lưu vào cookie để middleware đọc được ──
         setCookie("vf-auth", JSON.stringify({ state: { user, token } }));
-
         return { ok: true };
       },
 

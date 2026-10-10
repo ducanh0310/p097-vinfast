@@ -244,6 +244,7 @@ def test_interior_question_is_routed_to_rag():
 
 def test_interior_answer_with_rag_result_gets_confirmation_note(monkeypatch):
     import asyncio
+
     from src.agents.graph import build_graph
 
     @tool
