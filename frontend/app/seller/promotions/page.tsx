@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PROMOTIONS, Promotion } from "@/lib/seller-mock-data";
+import { fetchPromotions, createPromotion, deletePromotion } from "@/lib/seller-api";
 import { formatVND } from "@/lib/format";
 import { Plus, Pencil, Trash2, X, ToggleLeft, ToggleRight, Sparkles } from "lucide-react";
 
@@ -10,16 +11,55 @@ export default function PromotionsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing]   = useState<Promotion | null>(null);
 
+  useEffect(() => {
+    fetchPromotions()
+      .then((data) => {
+        if (data && data.length > 0) {
+          const mapped: Promotion[] = data.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            description: p.description || "",
+            model: p.model,
+            province: p.province || null,
+            discountType: p.discount_type,
+            discountValue: p.discount_value,
+            startDate: p.start_date ? p.start_date.slice(0, 10) : "",
+            endDate: p.end_date ? p.end_date.slice(0, 10) : "",
+            isActive: p.is_active,
+            usageCount: p.usage_count || 0,
+          }));
+          setPromos(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const handleToggle = (id: string) => {
     setPromos((p) => p.map((x) => x.id === id ? { ...x, isActive: !x.isActive } : x));
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Xoá khuyến mãi này?")) return;
+    try {
+      await deletePromotion(id);
+    } catch {}
     setPromos((p) => p.filter((x) => x.id !== id));
   };
 
-  const handleSave = (data: Omit<Promotion, "id" | "usageCount">) => {
+  const handleSave = async (data: Omit<Promotion, "id" | "usageCount">) => {
+    try {
+      await createPromotion({
+        name: data.name,
+        description: data.description,
+        model: data.model,
+        province: data.province || undefined,
+        discount_type: data.discountType,
+        discount_value: data.discountValue,
+        start_date: data.startDate,
+        end_date: data.endDate,
+        is_active: data.isActive,
+      });
+    } catch {}
     if (editing) {
       setPromos((p) => p.map((x) => x.id === editing.id ? { ...x, ...data } : x));
     } else {

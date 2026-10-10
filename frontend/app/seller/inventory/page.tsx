@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { INVENTORY, InventoryItem } from "@/lib/seller-mock-data";
+import { fetchInventory, updateInventory } from "@/lib/seller-api";
 import { Pencil, Save, X, AlertTriangle } from "lucide-react";
 
 export default function InventoryPage() {
@@ -10,13 +11,36 @@ export default function InventoryPage() {
   const [editQty, setEditQty] = useState(0);
   const [editDelivery, setEditDelivery] = useState("");
 
+  useEffect(() => {
+    fetchInventory()
+      .then((data) => {
+        if (data && data.length > 0) {
+          const mapped: InventoryItem[] = data.map((i: any) => ({
+            id: i.id,
+            model: i.model,
+            version: i.version,
+            color: i.color,
+            colorHex: i.color_hex,
+            quantity: i.quantity,
+            estDelivery: i.est_delivery,
+            updatedAt: i.updated_at ? i.updated_at.slice(0, 10) : "",
+          }));
+          setItems(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const startEdit = (item: InventoryItem) => {
     setEditId(item.id);
     setEditQty(item.quantity);
     setEditDelivery(item.estDelivery);
   };
 
-  const saveEdit = (id: string) => {
+  const saveEdit = async (id: string) => {
+    try {
+      await updateInventory(id, editQty, editDelivery);
+    } catch {}
     setItems((p) =>
       p.map((x) =>
         x.id === id

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { QUOTES, QuoteItem } from "@/lib/seller-mock-data";
+import { fetchQuotes, approveQuote } from "@/lib/seller-api";
 import { formatVND } from "@/lib/format";
 import { CheckCircle, XCircle, FileText, Clock, Eye, Check } from "lucide-react";
 
@@ -16,11 +17,45 @@ export default function QuotesPage() {
   const [selected, setSelected] = useState<QuoteItem | null>(null);
   const [note, setNote]         = useState("");
   const [filterStatus, setFilter] = useState("all");
+  const [loading, setLoading]   = useState(false);
 
-  const pending  = quotes.filter((q) => q.status === "pending").length;
-  const approved = quotes.filter((q) => q.status === "approved").length;
+  useEffect(() => {
+    fetchQuotes()
+      .then((data) => {
+        if (data && data.length > 0) {
+          const mapped: QuoteItem[] = data.map((q: any) => ({
+            id: q.id,
+            leadId: q.session_id,
+            leadName: q.buyer_name || "Khách hàng",
+            leadPhone: q.buyer_phone || "—",
+            model: q.model,
+            version: q.version,
+            province: q.province,
+            config: {
+              color: q.color,
+              battery: q.battery === "buy" ? "Mua pin" : "Thuê pin",
+              accessories: q.accessories || [],
+              promos: [],
+            },
+            finalPrice: q.final_price,
+            priceVersion: q.price_version,
+            status: q.status || "pending",
+            sellerNote: q.seller_note || null,
+            createdAt: q.created_at ? q.created_at.slice(0, 10) : "",
+            reviewedAt: q.reviewed_at ? q.reviewed_at.slice(0, 10) : null,
+          }));
+          setQuotes(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
-  const handleReview = (id: string, action: "approved" | "rejected") => {
+  const handleReview = async (id: string, action: "approved" | "rejected") => {
+    try {
+      await approveQuote(id, action === "approved" ? "approve" : "reject", note);
+    } catch {
+      // Tiếp tục cập nhật UI state
+    }
     setQuotes((p) =>
       p.map((q) =>
         q.id === id
@@ -32,6 +67,8 @@ export default function QuotesPage() {
     setNote("");
   };
 
+  const pending  = quotes.filter((q) => q.status === "pending").length;
+  const approved = quotes.filter((q) => q.status === "approved").length;
   const filtered = quotes.filter((q) => filterStatus === "all" || q.status === filterStatus);
 
   return (

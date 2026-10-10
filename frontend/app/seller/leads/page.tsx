@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LEADS, Lead } from "@/lib/seller-mock-data";
+import { fetchLeads, updateLead } from "@/lib/seller-api";
 import { formatVND } from "@/lib/format";
 import { MessageCircle, Phone, Search, MapPin, Car, DollarSign, Clock } from "lucide-react";
 
@@ -14,11 +15,43 @@ const STATUS_CONFIG = {
 };
 
 export default function LeadsPage() {
+  const [leads, setLeads]         = useState<Lead[]>(LEADS);
   const [search, setSearch]       = useState("");
   const [filterStatus, setFilter] = useState("all");
   const [selected, setSelected]   = useState<Lead | null>(null);
 
-  const filtered = LEADS.filter((l) => {
+  useEffect(() => {
+    fetchLeads(filterStatus)
+      .then((data) => {
+        if (data && data.length > 0) {
+          const mapped: Lead[] = data.map((l: any) => ({
+            id: l.id,
+            name: l.name,
+            phone: l.phone,
+            province: l.province || "—",
+            interestedIn: l.interested_in || "VF 6",
+            budget: l.budget || 700000000,
+            status: l.status || "new",
+            source: "AI Assistant",
+            createdAt: l.created_at ? l.created_at.slice(0, 10) : "",
+            note: l.note || "",
+            history: [],
+          }));
+          setLeads(mapped);
+        }
+      })
+      .catch(() => {});
+  }, [filterStatus]);
+
+  const handleUpdateStatus = async (leadId: string, status: any) => {
+    try {
+      await updateLead(leadId, status);
+    } catch {}
+    setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, status } : l)));
+    if (selected?.id === leadId) setSelected((prev) => (prev ? { ...prev, status } : null));
+  };
+
+  const filtered = leads.filter((l) => {
     const matchSearch =
       l.name.toLowerCase().includes(search.toLowerCase()) ||
       l.interestedIn.toLowerCase().includes(search.toLowerCase());
@@ -33,7 +66,7 @@ export default function LeadsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Khách hàng</h1>
-            <p className="text-slate-500 text-sm mt-1">{LEADS.length} leads từ AI chat</p>
+            <p className="text-slate-500 text-sm mt-1">{leads.length} leads từ AI chat</p>
           </div>
         </div>
 
@@ -139,9 +172,13 @@ export default function LeadsPage() {
 
           <div className="px-5 py-4 border-b">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Cập nhật trạng thái</p>
-            <select className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select
+              value={selected.status}
+              onChange={(e) => handleUpdateStatus(selected.id, e.target.value)}
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
               {Object.entries(STATUS_CONFIG).map(([k, v]) => (
-                <option key={k} value={k} selected={k === selected.status}>{v.label}</option>
+                <option key={k} value={k}>{v.label}</option>
               ))}
             </select>
           </div>
