@@ -11,6 +11,7 @@ export function SiteNav({ dark = false }: { dark?: boolean }) {
         <nav className="hidden items-center gap-8 text-sm font-medium md:flex">
           <Link href="/#dong-xe" className={link}>Dòng xe</Link>
           <Link href="/configurator" className={link}>Cấu hình xe</Link>
+          <Link href="/business" className={`${link} font-semibold text-blue-600`}>Báo giá Doanh nghiệp</Link>
           <Link href="/#uu-dai" className={link}>Ưu đãi</Link>
         </nav>
         <AuthButton />
