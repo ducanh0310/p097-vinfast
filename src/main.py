@@ -44,6 +44,17 @@ app.add_middleware(
 app.include_router(router, prefix="/api/v1")
 
 
+@app.get("/")
+async def root():
+    return {
+        "name": settings.app_name,
+        "status": "online",
+        "env": settings.app_env,
+        "docs": "/docs",
+        "health": "/health",
+    }
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "env": settings.app_env}
